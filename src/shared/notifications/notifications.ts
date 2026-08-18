@@ -15,12 +15,20 @@ export function isNotificationSupported(): boolean {
 }
 
 export function isPushSupported(): boolean {
-  return (
-    isNotificationSupported() &&
-    'PushManager' in window &&
-    typeof API_URL === 'string' &&
-    API_URL.length > 0
-  )
+  const checks = {
+    notification: typeof window !== 'undefined' && 'Notification' in window,
+    serviceWorker: typeof navigator !== 'undefined' && 'serviceWorker' in navigator,
+    pushManager: typeof window !== 'undefined' && 'PushManager' in window,
+    apiUrl: typeof API_URL === 'string' && API_URL.length > 0,
+  }
+  const allOk = Object.values(checks).every(Boolean)
+  if (!allOk) {
+    console.warn('[notifications] Push não suportado — motivos:', checks, {
+      VITE_API_URL: API_URL || '(vazio)',
+      VITE_VAPID_PUBLIC_KEY: VAPID_PUBLIC_KEY ? 'configurada' : '(vazio)',
+    })
+  }
+  return allOk
 }
 
 export function getNotificationPermission(): NotificationPermission | null {
