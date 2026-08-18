@@ -13,9 +13,9 @@ export function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex flex-1 flex-col md:pl-[280px]">
+      <div className="flex min-w-0 flex-1 flex-col md:pl-[280px]">
         <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto">
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>

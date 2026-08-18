@@ -83,7 +83,7 @@ export function DashboardScreen() {
         description="Total investido, expectativa de rendimento mensal e distribuição por categoria."
       />
 
-      <ResponsiveGrid cols={{ base: 1, sm: 2, md: 3 }} gap="md">
+      <ResponsiveGrid cols={{ base: 1, sm: 2, md: 3 }} gap="md" className="gap-4 sm:gap-6">
         <PortfolioKpiCard
           label="Total Investido"
           value={summary.totalValue}
@@ -101,14 +101,14 @@ export function DashboardScreen() {
         />
       </ResponsiveGrid>
 
-      <ResponsiveGrid cols={{ base: 1, lg: 3 }} gap="md">
+      <ResponsiveGrid cols={{ base: 1, lg: 3 }} gap="md" className="gap-4 sm:gap-6">
         <PerformanceChartCard data={performance} />
         <AllocationCard allocation={allocation} currency={currency} />
       </ResponsiveGrid>
 
       {/* Distribuição por categoria — cards detalhados */}
       {allocation.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           {allocation.map((slice) => (
             <CategoryTile
               key={slice.id}
@@ -151,7 +151,7 @@ function CategoryTile({
 }) {
   return (
     <Card>
-      <CardContent className="flex flex-col gap-2 p-3 sm:p-4">
+      <CardContent className="flex flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
         <div className="flex items-center gap-2">
           <span
             className="size-2.5 rounded-full"
@@ -162,7 +162,7 @@ function CategoryTile({
             {label}
           </span>
         </div>
-        <p className="font-mono text-base font-bold sm:text-lg">
+        <p className="font-mono text-sm font-bold sm:text-base md:text-lg">
           {formatCurrency(value, { currency })}
         </p>
         <p className="text-xs text-muted-foreground">{percentage}% do total</p>
@@ -189,14 +189,14 @@ function MonthlyIncomeBreakdown({
 
   return (
     <Card>
-      <CardContent className="flex flex-col gap-4 p-5">
+      <CardContent className="flex flex-col gap-4 p-4 sm:p-5">
         <div className="flex items-center gap-2">
           <TrendingUp className="size-5 text-success" />
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Expectativa de Rendimento Mensal
             </p>
-            <p className="font-mono text-2xl font-bold text-success">
+            <p className="font-mono text-xl font-bold text-success sm:text-2xl">
               {formatCurrency(summary.monthlyIncome, { currency })}
             </p>
           </div>
@@ -210,7 +210,7 @@ function MonthlyIncomeBreakdown({
               return (
                 <div
                   key={cat.id}
-                  className="flex items-center justify-between text-sm"
+                  className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm"
                 >
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <span

@@ -33,7 +33,7 @@ export const PageHeader = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'flex flex-col gap-3 pb-6 md:flex-row md:items-end md:justify-between md:gap-4',
+      'flex min-w-0 flex-col gap-3 pb-6 md:flex-row md:items-end md:justify-between md:gap-4',
       className,
     )}
     {...props}

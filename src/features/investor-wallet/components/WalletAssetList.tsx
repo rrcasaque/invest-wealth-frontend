@@ -117,12 +117,12 @@ function renderDetails(asset: WalletAsset): { label: string; value: string }[] {
 function WalletCard({ asset, onRemove }: { asset: WalletAsset; onRemove: (id: string) => void }) {
   const details = renderDetails(asset)
   return (
-    <div className="flex flex-col gap-3 p-4">
-      <div className="flex items-start justify-between gap-2">
+    <div className="flex min-w-0 flex-col gap-3 p-4">
+      <div className="flex min-w-0 items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <span className="font-medium">{asset.name}</span>
+          <span className="block truncate font-medium">{asset.name}</span>
           {asset.notes && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
               <FileText className="size-3 shrink-0" />
               <span className="truncate">{asset.notes}</span>
             </span>
@@ -142,9 +142,9 @@ function WalletCard({ asset, onRemove }: { asset: WalletAsset; onRemove: (id: st
 
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
         {details.map((d) => (
-          <div key={d.label} className="flex flex-col">
+          <div key={d.label} className="flex min-w-0 flex-col">
             <span className="text-muted-foreground">{d.label}</span>
-            <span className="font-mono text-foreground">{d.value}</span>
+            <span className="truncate font-mono text-foreground">{d.value}</span>
           </div>
         ))}
       </div>

@@ -2,7 +2,6 @@ import * as React from 'react'
 import {
   getStoredTheme,
   getSystemTheme,
-  resolveInitialTheme,
   storeTheme,
   type Theme,
 } from '@/shared/storage/theme-storage'
@@ -33,7 +32,7 @@ export function ThemeProvider({
   defaultTheme,
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(
-    () => defaultTheme ?? resolveInitialTheme(),
+    () => getStoredTheme() ?? defaultTheme ?? getSystemTheme(),
   )
 
   React.useEffect(() => {

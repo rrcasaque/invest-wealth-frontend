@@ -11,10 +11,10 @@ interface AllocationCardProps {
 export function AllocationCard({ allocation, currency = 'BRL', className }: AllocationCardProps) {
   return (
     <Card className={className}>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg">Alocação</CardTitle>
+      <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+        <CardTitle className="text-base sm:text-lg">Alocação</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-4 p-4 pt-0 sm:space-y-5 sm:p-6 sm:pt-0">
         {allocation.map((slice) => (
           <div key={slice.id}>
             <div className="mb-1.5 flex items-center justify-between text-sm">

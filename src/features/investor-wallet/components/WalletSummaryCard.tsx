@@ -17,7 +17,7 @@ export function WalletSummaryCard({ summary, b3TotalValue = 0 }: WalletSummaryCa
   const totalAssets = summary.totalAssets + (b3TotalValue > 0 ? 1 : 0)
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 min-w-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
       <SummaryTile
         icon={<Briefcase className="size-4" />}
         label="Total Aplicado"
@@ -78,18 +78,18 @@ function SummaryTile({
   }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2 p-3 sm:p-4">
-        <div className="flex items-center gap-2">
+    <Card className="min-w-0">
+      <CardContent className="flex min-w-0 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+        <div className="flex min-w-0 items-center gap-2">
           <span className={toneClasses[tone]}>{icon}</span>
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <span className="min-w-0 truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {label}
           </span>
         </div>
-        <p className={`font-mono text-base font-bold sm:text-lg ${toneClasses[tone]}`}>
+        <p className={`min-w-0 break-words font-mono text-sm font-bold sm:text-base md:text-lg ${toneClasses[tone]}`}>
           {value}
         </p>
-        <p className="text-xs text-muted-foreground">{sub}</p>
+        <p className="min-w-0 truncate text-xs text-muted-foreground">{sub}</p>
       </CardContent>
     </Card>
   )

@@ -30,8 +30,8 @@ export function PerformanceChartCard({ data, className }: PerformanceChartCardPr
 
   return (
     <Card className={cn('lg:col-span-2', className)}>
-      <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle>Desempenho dos Ativos</CardTitle>
+      <CardHeader className="flex flex-col gap-3 space-y-0 p-4 pb-2 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <CardTitle className="text-base sm:text-lg">Desempenho dos Ativos</CardTitle>
         <div className="flex gap-1.5">
           {periods.map((p) => (
             <Button
@@ -46,8 +46,8 @@ export function PerformanceChartCard({ data, className }: PerformanceChartCardPr
           ))}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[240px] w-full sm:h-[260px]">
+      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+        <div className="h-[220px] w-full sm:h-[260px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={filtered} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>

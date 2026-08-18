@@ -8,7 +8,7 @@ import { AppRoutes, RouteFallback } from './routes'
 
 export function App() {
   return (
-    <ThemeProvider defaultTheme="dark">
+    <ThemeProvider defaultTheme="light">
       <AuthProvider>
         <BrowserRouter>
           <TooltipProvider delayDuration={150}>

@@ -24,11 +24,11 @@ export function PortfolioKpiCard({
   const isPositive = (delta?.value ?? 0) >= 0
   return (
     <Card className={cn('relative overflow-hidden', className)}>
-      <CardContent className="flex flex-col gap-2 p-5">
+      <CardContent className="flex flex-col gap-1.5 p-4 sm:gap-2 sm:p-5">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {label}
         </p>
-        <p className={cn('font-heading text-2xl font-bold tracking-tight sm:text-3xl', mono && 'font-mono')}>
+        <p className={cn('font-heading text-xl font-bold leading-tight tracking-tight sm:text-2xl md:text-3xl', mono && 'font-mono')}>
           {formatCurrency(value, { currency })}
         </p>
         {delta && (

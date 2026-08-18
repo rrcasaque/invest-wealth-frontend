@@ -36,7 +36,7 @@ export function InvestorWalletScreen() {
   return (
     <PageContainer maxWidth="wide" className="space-y-4 sm:space-y-6">
       <PageHeader>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <PageTitle className="flex items-center gap-2">
             <Briefcase className="size-5 shrink-0 text-primary sm:size-6" />
             <span className="truncate">Carteira de Investimentos</span>
@@ -47,7 +47,7 @@ export function InvestorWalletScreen() {
           </PageDescription>
         </div>
         {hasContent && (
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row">
             <B3ImportDialog onImported={refresh} />
             <WalletAssetForm onCreate={create} />
           </div>
@@ -56,7 +56,7 @@ export function InvestorWalletScreen() {
 
       {status === 'loading' && !hasContent ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-28" />
             ))}
