@@ -23,10 +23,14 @@ export function isPushSupported(): boolean {
   }
   const allOk = Object.values(checks).every(Boolean)
   if (!allOk) {
-    console.warn('[notifications] Push não suportado — motivos:', checks, {
-      VITE_API_URL: API_URL || '(vazio)',
-      VITE_VAPID_PUBLIC_KEY: VAPID_PUBLIC_KEY ? 'configurada' : '(vazio)',
-    })
+    console.warn(
+      '[notifications] Push não suportado — motivos:',
+      JSON.stringify(checks),
+      'API_URL:',
+      JSON.stringify(API_URL || '(vazio)'),
+      'VAPID_PUBLIC_KEY:',
+      VAPID_PUBLIC_KEY ? 'configurada' : '(vazio)',
+    )
   }
   return allOk
 }
