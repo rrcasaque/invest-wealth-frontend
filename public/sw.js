@@ -122,3 +122,36 @@ self.addEventListener('notificationclick', (event) => {
     }),
   )
 })
+
+/**
+ * Web Push: disparado pelo navegador quando o backend envia um push
+ * (via FCM/Mozilla). Funciona com app fechado — o navegador acorda o SW.
+ *
+ * O payload (enviado pelo backend) é um JSON com:
+ *   { title, body?, icon?, tag?, data? }
+ */
+self.addEventListener('push', (event) => {
+  let payload = { title: 'InvestWealth', body: '', icon: '/favicon.svg', tag: 'investwealth' }
+  try {
+    if (event.data) {
+      const parsed = event.data.json()
+      payload = { ...payload, ...parsed }
+    }
+  } catch {
+    // payload não-JSON; usa texto como body
+    if (event.data) {
+      payload.body = event.data.text()
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: payload.icon,
+      tag: payload.tag,
+      data: payload.data ?? { timestamp: Date.now() },
+      requireInteraction: false,
+    }),
+  )
+})

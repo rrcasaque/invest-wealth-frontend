@@ -1,11 +1,18 @@
 import { NavLink } from 'react-router-dom'
-import { Bell, BellRing, X } from 'lucide-react'
-import { useState } from 'react'
+import { Bell, BellRing, X, Zap } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/shared/utils/cn'
 import { appConfig, primaryNav, secondaryNav, type NavItem } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import { useToast } from '@/shared/ui/toast'
-import { sendTestNotification, sendScheduledNotification } from '@/shared/notifications'
+import {
+  sendTestNotification,
+  sendScheduledNotification,
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications,
+  hasPushSubscription,
+  isPushSupported,
+} from '@/shared/notifications'
 
 interface SidebarProps {
   /** Mobile drawer open state. */
@@ -113,6 +120,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               </li>
             ))}
           </ul>
+          <PushSubscriptionButton />
           <TestNotificationButton />
           <TestScheduledNotificationButton />
         </div>
@@ -157,6 +165,85 @@ function TestNotificationButton() {
     >
       <Bell className="size-4" />
       Testar Notificação
+    </Button>
+  )
+}
+
+function PushSubscriptionButton() {
+  const { toast } = useToast()
+  const [subscribed, setSubscribed] = useState(false)
+  const [isBusy, setIsBusy] = useState(false)
+
+  useEffect(() => {
+    if (!isPushSupported()) return
+    hasPushSubscription().then(setSubscribed).catch(() => setSubscribed(false))
+  }, [])
+
+  const handleSubscribe = async () => {
+    setIsBusy(true)
+    try {
+      const result = await subscribeToPushNotifications()
+      if (result.ok) {
+        setSubscribed(true)
+        toast({
+          title: 'Notificações ativadas',
+          description: 'Você receberá notificações automáticas a cada 5 minutos, mesmo com o app fechado.',
+          variant: 'success',
+        })
+      } else {
+        toast({
+          title: 'Falha ao ativar',
+          description: result.error,
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  const handleUnsubscribe = async () => {
+    setIsBusy(true)
+    try {
+      const result = await unsubscribeFromPushNotifications()
+      if (result.ok) {
+        setSubscribed(false)
+        toast({
+          title: 'Notificações desativadas',
+          description: 'Você não receberá mais notificações automáticas.',
+          variant: 'success',
+        })
+      } else {
+        toast({
+          title: 'Falha ao desativar',
+          description: result.error,
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  if (!isPushSupported()) {
+    return (
+      <Button variant="outline" size="sm" className="w-full justify-start gap-2" disabled>
+        <Zap className="size-4" />
+        Push não suportado
+      </Button>
+    )
+  }
+
+  return (
+    <Button
+      variant={subscribed ? 'default' : 'outline'}
+      size="sm"
+      className="w-full justify-start gap-2"
+      onClick={subscribed ? handleUnsubscribe : handleSubscribe}
+      disabled={isBusy}
+    >
+      <Zap className="size-4" />
+      {subscribed ? 'Notificações Ativas' : 'Ativar Notificações'}
     </Button>
   )
 }

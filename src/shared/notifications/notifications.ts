@@ -1,15 +1,26 @@
 /**
- * Helpers para notificações do sistema via Service Worker.
+ * Helpers para notificações do sistema via Service Worker + Web Push.
  *
- * Em Android (Chrome/PWA instalado), `registration.showNotification()`
- * exibe a notificação na barra de notificações do celular.
- * Em iOS 16.4+ funciona apenas quando o app está instalado no home screen.
+ * Web Push (VAPID) é o canal confiável para notificações com app fechado:
+ * o backend envia um push via FCM/Mozilla, o navegador acorda o SW,
+ * e o handler `push` em sw.js exibe a notificação do sistema.
  */
 
 const SW_PATH = '/sw.js'
+const API_URL = import.meta.env.VITE_API_URL ?? ''
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY ?? ''
 
 export function isNotificationSupported(): boolean {
   return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator
+}
+
+export function isPushSupported(): boolean {
+  return (
+    isNotificationSupported() &&
+    'PushManager' in window &&
+    typeof API_URL === 'string' &&
+    API_URL.length > 0
+  )
 }
 
 export function getNotificationPermission(): NotificationPermission | null {
@@ -46,6 +57,151 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 }
 
 /**
+ * Converte a VAPID public key (base64url string) em Uint8Array,
+ * formato exigido por `pushManager.subscribe`.
+ */
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = atob(base64)
+  const output = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    output[i] = rawData.charCodeAt(i)
+  }
+  return output
+}
+
+/**
+ * Converte Uint8Array para BufferSource compatível com a lib DOM do TS 6.
+ * (Workaround para incompatibilidade ArrayBufferLike vs ArrayBuffer.)
+ */
+function toBufferSource(input: Uint8Array): ArrayBuffer {
+  return input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength) as ArrayBuffer
+}
+
+/**
+ * Busca a VAPID public key. Tenta primeiro do .env (VITE_VAPID_PUBLIC_KEY);
+ * se não estiver configurada, busca no backend em GET /notifications/vapid-public-key.
+ */
+async function resolveVapidPublicKey(): Promise<string | null> {
+  if (VAPID_PUBLIC_KEY) return VAPID_PUBLIC_KEY
+  if (!API_URL) return null
+  try {
+    const res = await fetch(`${API_URL}/notifications/vapid-public-key`)
+    if (!res.ok) return null
+    const data = (await res.json()) as { publicKey?: string }
+    return data.publicKey ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Subscreve para Web Push e envia a inscrição para o backend.
+ * Retorna true se a inscrição foi criada (ou já existia e está ativa).
+ */
+export async function subscribeToPushNotifications(): Promise<{
+  ok: boolean
+  error?: string
+}> {
+  if (!isPushSupported()) {
+    return { ok: false, error: 'Web Push não suportado neste dispositivo/navegador.' }
+  }
+
+  const permission = await requestNotificationPermission()
+  if (permission !== 'granted') {
+    return { ok: false, error: 'Permissão de notificações negada.' }
+  }
+
+  const registration = await registerServiceWorker()
+  if (!registration) {
+    return { ok: false, error: 'Não foi possível registrar o service worker.' }
+  }
+
+  await navigator.serviceWorker.ready
+
+  const vapidKey = await resolveVapidPublicKey()
+  if (!vapidKey) {
+    return { ok: false, error: 'VAPID public key não configurada.' }
+  }
+
+  let subscription: PushSubscription
+  try {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: toBufferSource(urlBase64ToUint8Array(vapidKey)),
+    })
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Falha ao subscrever Web Push.',
+    }
+  }
+
+  // Envia a inscrição para o backend persistir
+  try {
+    const res = await fetch(`${API_URL}/notifications/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription.toJSON()),
+    })
+    if (!res.ok) {
+      return { ok: false, error: `Backend rejeitou a inscrição (HTTP ${res.status}).` }
+    }
+    return { ok: true }
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Falha ao registrar no backend.',
+    }
+  }
+}
+
+/**
+ * Remove a inscrição local e do backend.
+ */
+export async function unsubscribeFromPushNotifications(): Promise<{
+  ok: boolean
+  error?: string
+}> {
+  if (!isPushSupported()) return { ok: false, error: 'Web Push não suportado.' }
+  try {
+    const registration = await navigator.serviceWorker.ready
+    const sub = await registration.pushManager.getSubscription()
+    if (sub) {
+      const endpoint = sub.endpoint
+      await sub.unsubscribe()
+      if (API_URL && endpoint) {
+        await fetch(
+          `${API_URL}/notifications/unsubscribe/${encodeURIComponent(endpoint)}`,
+          { method: 'DELETE' },
+        ).catch(() => { })
+      }
+    }
+    return { ok: true }
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Falha ao cancelar inscrição.',
+    }
+  }
+}
+
+/**
+ * Verifica se já existe inscrição ativa de push.
+ */
+export async function hasPushSubscription(): Promise<boolean> {
+  if (!isPushSupported()) return false
+  try {
+    const registration = await navigator.serviceWorker.ready
+    const sub = await registration.pushManager.getSubscription()
+    return sub !== null
+  } catch {
+    return false
+  }
+}
+
+/**
  * Envia uma notificação de teste para a barra de notificações do dispositivo.
  * Garante permissão + service worker ativo antes de disparar.
  */
@@ -76,13 +232,11 @@ export async function sendTestNotification(): Promise<{ ok: boolean; error?: str
   }
 
   try {
-    // Tenta via postMessage (canal preferido, funciona com SW ativo)
     const active = registration.active || navigator.serviceWorker.controller
     if (active) {
       active.postMessage(payload)
       return { ok: true }
     }
-    // Fallback: showNotification direto pela registration
     await registration.showNotification(payload.title, {
       body: payload.body,
       icon: payload.icon,
@@ -97,14 +251,7 @@ export async function sendTestNotification(): Promise<{ ok: boolean; error?: str
 
 /**
  * Agenda uma notificação de teste para daqui a `delayMs` milissegundos.
- *
- * Estratégia dupla para maximizar a chance de disparar:
- *  1. Posta mensagem para o SW agendar com setTimeout (continua rodando
- *     mesmo se a aba for minimizada, enquanto o SW não for terminado)
- *  2. Mantém um setTimeout na própria página como fallback (dispara se
- *     a aba permanecer aberta)
- *
- * Retorna o timestamp agendado para a UI mostrar "agendado para HH:MM:SS".
+ * Mantém setTimeout na página como fallback (SW pode ser terminado).
  */
 export async function sendScheduledNotification(
   delayMs: number,
@@ -137,34 +284,21 @@ export async function sendScheduledNotification(
   }
 
   try {
-    // 1. Agenda no service worker (sobrevive a minimizar a aba)
     const active = registration.active || navigator.serviceWorker.controller
     if (active) {
       active.postMessage(payload)
-    } else {
-      // Sem SW ativo: agenda direto pela página
-      scheduleFromPage(delayMs, payload)
     }
-
-    // 2. Fallback na página (garante disparo se a aba continuar aberta
-    //    e o SW for terminado pelo navegador)
     scheduleFromPage(delayMs, payload)
-
     return { ok: true, scheduledAt }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Falha ao agendar a notificação.' }
   }
 }
 
-/**
- * Agenda a notificação a partir da própria página.
- * Se a aba for fechada, este timer é cancelado — por isso é só fallback.
- */
 function scheduleFromPage(delayMs: number, payload: SchedulePayload): void {
   setTimeout(() => {
     const active = navigator.serviceWorker?.controller
     if (active) {
-      // Repassa para o SW exibir (notificação do sistema)
       active.postMessage({
         type: 'SHOW_NOTIFICATION',
         title: payload.title,
@@ -173,8 +307,6 @@ function scheduleFromPage(delayMs: number, payload: SchedulePayload): void {
         tag: payload.tag,
       })
     } else {
-      // Sem SW ativo: usa Notification diretamente (funciona em desktop;
-      // no mobile só aparece como toast in-page, não na barra do sistema)
       try {
         // eslint-disable-next-line no-new
         new Notification(payload.title, {
