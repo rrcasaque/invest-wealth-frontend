@@ -1,8 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { X } from 'lucide-react'
+import { Bell, X } from 'lucide-react'
+import { useState } from 'react'
 import { cn } from '@/shared/utils/cn'
 import { appConfig, primaryNav, secondaryNav, type NavItem } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
+import { useToast } from '@/shared/ui/toast'
+import { sendTestNotification } from '@/shared/notifications'
 
 interface SidebarProps {
   /** Mobile drawer open state. */
@@ -101,7 +104,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </ul>
         </nav>
 
-        {/* Footer: secondary nav */}
+        {/* Footer: secondary nav + testar notificação */}
         <div className="flex flex-col gap-3 border-t border-sidebar-border px-4 py-4">
           <ul className="flex flex-col gap-1">
             {secondaryNav.map((item) => (
@@ -110,8 +113,49 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               </li>
             ))}
           </ul>
+          <TestNotificationButton />
         </div>
       </aside>
     </>
+  )
+}
+
+function TestNotificationButton() {
+  const { toast } = useToast()
+  const [isSending, setIsSending] = useState(false)
+
+  const handleClick = async () => {
+    setIsSending(true)
+    try {
+      const result = await sendTestNotification()
+      if (result.ok) {
+        toast({
+          title: 'Notificação enviada',
+          description: 'Verifique a barra de notificações do seu dispositivo.',
+          variant: 'success',
+        })
+      } else {
+        toast({
+          title: 'Não foi possível notificar',
+          description: result.error,
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="w-full justify-start gap-2"
+      onClick={handleClick}
+      disabled={isSending}
+    >
+      <Bell className="size-4" />
+      Testar Notificação
+    </Button>
   )
 }

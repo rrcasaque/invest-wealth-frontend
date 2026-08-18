@@ -1,0 +1,20 @@
+{
+  "name": "InvestWealth — Grau Institucional",
+  "short_name": "InvestWealth",
+  "description": "Negociação de Nível Institucional",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#031427",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
