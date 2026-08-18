@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { Bell, X } from 'lucide-react'
+import { Bell, BellRing, X } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/shared/utils/cn'
 import { appConfig, primaryNav, secondaryNav, type NavItem } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import { useToast } from '@/shared/ui/toast'
-import { sendTestNotification } from '@/shared/notifications'
+import { sendTestNotification, sendScheduledNotification } from '@/shared/notifications'
 
 interface SidebarProps {
   /** Mobile drawer open state. */
@@ -114,6 +114,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             ))}
           </ul>
           <TestNotificationButton />
+          <TestScheduledNotificationButton />
         </div>
       </aside>
     </>
@@ -156,6 +157,51 @@ function TestNotificationButton() {
     >
       <Bell className="size-4" />
       Testar Notificação
+    </Button>
+  )
+}
+
+function TestScheduledNotificationButton() {
+  const { toast } = useToast()
+  const [isScheduling, setIsScheduling] = useState(false)
+
+  const handleClick = async () => {
+    setIsScheduling(true)
+    try {
+      const FIVE_MINUTES_MS = 5 * 60 * 1000
+      const result = await sendScheduledNotification(FIVE_MINUTES_MS)
+      if (result.ok && result.scheduledAt) {
+        const horario = new Date(result.scheduledAt).toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+        toast({
+          title: 'Notificação agendada',
+          description: `Você receberá uma notificação às ${horario} (daqui a 5 minutos). Mantenha o app aberto ou instalado.`,
+          variant: 'success',
+        })
+      } else {
+        toast({
+          title: 'Não foi possível agendar',
+          description: result.error,
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setIsScheduling(false)
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="w-full justify-start gap-2"
+      onClick={handleClick}
+      disabled={isScheduling}
+    >
+      <BellRing className="size-4" />
+      Testar Notificação (5min)
     </Button>
   )
 }

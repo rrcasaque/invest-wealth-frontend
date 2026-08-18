@@ -4,4 +4,5 @@ export {
   registerServiceWorker,
   requestNotificationPermission,
   sendTestNotification,
+  sendScheduledNotification,
 } from './notifications'

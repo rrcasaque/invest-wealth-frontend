@@ -65,12 +65,35 @@ self.addEventListener('fetch', (event) => {
 
 /**
  * Recebe mensagens da aplicação para disparar notificações do sistema.
- * Espera payload: { type: 'SHOW_NOTIFICATION', title, body?, icon?, tag? }
+ *
+ * Tipos suportados:
+ *  - SHOW_NOTIFICATION: exibe imediatamente
+ *    payload: { type, title, body?, icon?, tag? }
+ *  - SCHEDULE_NOTIFICATION: agenda exibição para daqui a delayMs
+ *    payload: { type, delayMs, title, body?, icon?, tag?, scheduledAt }
  */
 self.addEventListener('message', (event) => {
   const data = event.data
-  if (!data || data.type !== 'SHOW_NOTIFICATION') return
+  if (!data) return
 
+  if (data.type === 'SHOW_NOTIFICATION') {
+    showNotificationNow(data)
+    return
+  }
+
+  if (data.type === 'SCHEDULE_NOTIFICATION') {
+    const delay = Number(data.delayMs) || 0
+    if (delay <= 0) {
+      showNotificationNow(data)
+      return
+    }
+    // Agenda no próprio SW. O navegador pode terminar o SW inativo antes
+    // do timer disparar; a página mantém um fallback paralelo.
+    setTimeout(() => showNotificationNow(data), delay)
+  }
+})
+
+function showNotificationNow(data) {
   const { title, body = '', icon = '/favicon.svg', tag = 'investwealth-test' } = data
   self.registration
     .showNotification(title, {
@@ -82,10 +105,9 @@ self.addEventListener('message', (event) => {
       data: { timestamp: Date.now() },
     })
     .catch((err) => {
-      // Loga para depuração; a app também trata o erro via promise
       console.error('[sw] falha ao exibir notificação:', err)
     })
-})
+}
 
 // Fecha notificações ao clicar e foca a janela do app
 self.addEventListener('notificationclick', (event) => {
