@@ -1,0 +1,267 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   InvestWealth — Kinetic Institutional design tokens
+   ============================================================ */
+
+:root {
+  /* Surfaces (light) */
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+
+  --surface: 0 0% 100%;
+  --surface-container-lowest: 210 40% 99%;
+  --surface-container-low: 210 40% 96%;
+  --surface-container: 210 40% 94%;
+  --surface-container-high: 214 32% 91%;
+  --surface-container-highest: 215 28% 88%;
+  --surface-bright: 0 0% 100%;
+  --surface-dim: 210 40% 92%;
+
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  /* Brand */
+  --primary: 217 91% 60%; /* Electric Blue #3B82F6 */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 152 70% 45%; /* Emerald #10B981-ish */
+  --secondary-foreground: 152 100% 8%;
+
+  --tertiary: 217 94% 76%; /* Light blue accent */
+  --tertiary-foreground: 217 94% 20%;
+
+  --accent: 217 91% 95%;
+  --accent-foreground: 217 91% 30%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 152 70% 45%;
+  --success-foreground: 152 100% 8%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 38 100% 10%;
+
+  --border: 214 32% 88%;
+  --input: 214 32% 91%;
+  --ring: 217 91% 60%;
+
+  --outline: 215 16% 65%;
+  --outline-variant: 215 16% 80%;
+
+  /* Charts */
+  --chart-portfolio: 217 91% 60%;
+  --chart-cdi: 152 70% 45%;
+  --chart-ibov: 215 16% 47%;
+  --chart-ifix: 0 75% 55%;
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Hanken Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* Radius */
+  --radius: 0.5rem;
+
+  /* Sidebar */
+  --sidebar-width: 280px;
+  --sidebar-collapsed: 80px;
+
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 222 47% 11%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 217 91% 95%;
+  --sidebar-accent-foreground: 217 91% 30%;
+  --sidebar-border: 214 32% 90%;
+  --sidebar-ring: 217 91% 60%;
+}
+
+.dark {
+  /* Surfaces (dark — Kinetic Institutional) */
+  --background: 213 70% 7%; /* #031427 */
+  --foreground: 213 60% 91%; /* #D3E4FE */
+
+  --surface: 213 56% 14%; /* #102034 */
+  --surface-container-lowest: 213 80% 5%; /* #000F21 */
+  --surface-container-low: 213 60% 12%; /* #0B1C30 */
+  --surface-container: 213 56% 14%; /* #102034 */
+  --surface-container-high: 213 44% 17%; /* #1B2B3F */
+  --surface-container-highest: 213 36% 22%; /* #26364A */
+  --surface-bright: 213 30% 27%; /* #2A3A4F */
+  --surface-dim: 213 70% 7%;
+
+  --muted: 213 36% 22%;
+  --muted-foreground: 220 9% 79%; /* #C5C6CD */
+
+  --card: 213 60% 12%;
+  --card-foreground: 213 60% 91%;
+
+  --popover: 213 56% 14%;
+  --popover-foreground: 213 60% 91%;
+
+  /* Brand */
+  --primary: 217 91% 60%; /* Electric Blue */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 156 68% 59%; /* Emerald #4EDEA3 */
+  --secondary-foreground: 156 100% 8%;
+
+  --tertiary: 217 100% 84%; /* #ADC6FF */
+  --tertiary-foreground: 217 100% 20%;
+
+  --accent: 213 56% 18%;
+  --accent-foreground: 213 60% 91%;
+
+  --destructive: 0 100% 83%; /* #FFB4AB */
+  --destructive-foreground: 0 80% 12%;
+
+  --success: 156 68% 59%;
+  --success-foreground: 156 100% 8%;
+
+  --warning: 38 92% 60%;
+  --warning-foreground: 38 100% 10%;
+
+  --border: 213 30% 22%;
+  --input: 213 36% 22%;
+  --ring: 217 91% 60%;
+
+  --outline: 220 9% 56%; /* #8F9097 */
+  --outline-variant: 220 9% 28%; /* #44474D */
+
+  /* Charts */
+  --chart-portfolio: 217 91% 60%;
+  --chart-cdi: 156 68% 59%;
+  --chart-ibov: 220 9% 56%;
+  --chart-ifix: 0 100% 70%;
+
+  --sidebar: 213 70% 7%;
+  --sidebar-foreground: 213 60% 91%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 213 56% 18%;
+  --sidebar-accent-foreground: 213 60% 91%;
+  --sidebar-border: 213 30% 18%;
+  --sidebar-ring: 217 91% 60%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-surface: hsl(var(--surface));
+  --color-surface-container-lowest: hsl(var(--surface-container-lowest));
+  --color-surface-container-low: hsl(var(--surface-container-low));
+  --color-surface-container: hsl(var(--surface-container));
+  --color-surface-container-high: hsl(var(--surface-container-high));
+  --color-surface-container-highest: hsl(var(--surface-container-highest));
+  --color-surface-bright: hsl(var(--surface-bright));
+  --color-surface-dim: hsl(var(--surface-dim));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-tertiary: hsl(var(--tertiary));
+  --color-tertiary-foreground: hsl(var(--tertiary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-outline: hsl(var(--outline));
+  --color-outline-variant: hsl(var(--outline-variant));
+
+  --color-chart-portfolio: hsl(var(--chart-portfolio));
+  --color-chart-cdi: hsl(var(--chart-cdi));
+  --color-chart-ibov: hsl(var(--chart-ibov));
+  --color-chart-ifix: hsl(var(--chart-ifix));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --sidebar-width: 280px;
+  --sidebar-collapsed: 80px;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: normal;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+  }
+
+  /* Tabular figures for financial data */
+  .font-mono,
+  [class*='font-mono'] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background: hsl(var(--surface) / 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
