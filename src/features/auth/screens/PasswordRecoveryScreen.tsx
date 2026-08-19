@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, KeyRound, Mail, MailCheck, ShieldCheck } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -15,7 +15,9 @@ import { usePasswordRecovery } from '../hooks/usePasswordRecovery'
 import { passwordRecoverySchema, type PasswordRecoveryValues } from '../schemas'
 
 export function PasswordRecoveryScreen() {
-  const { status, submittedEmail, submit, reset } = usePasswordRecovery()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { status, submittedEmail, submit } = usePasswordRecovery()
 
   const form = useForm<PasswordRecoveryValues>({
     resolver: zodResolver(passwordRecoverySchema),
@@ -27,6 +29,11 @@ export function PasswordRecoveryScreen() {
   }
 
   const isSuccess = status === 'success'
+
+  const goToReset = () => {
+    const email = submittedEmail ?? (location.state as { email?: string } | null)?.email ?? ''
+    navigate('/redefinir-senha', { state: { email } })
+  }
 
   return (
     <div className="mx-auto w-full max-w-[440px]">
@@ -135,8 +142,8 @@ export function PasswordRecoveryScreen() {
           <p className="text-xs text-muted-foreground">
             O link expirará em 15 minutos para garantir segurança operacional rigorosa.
           </p>
-          <Button variant="outline" className="w-full" onClick={reset}>
-            Reconhecer e Retornar
+          <Button variant="outline" className="w-full" onClick={goToReset}>
+            Reconhecer e Redefinir Senha
           </Button>
           <Link
             to="/entrar"

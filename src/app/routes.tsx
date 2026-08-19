@@ -33,6 +33,21 @@ const PasswordRecoveryScreen = lazy(() =>
     default: m.PasswordRecoveryScreen,
   })),
 )
+const VerifyEmailScreen = lazy(() =>
+  import('@/features/auth/screens/VerifyEmailScreen').then((m) => ({
+    default: m.VerifyEmailScreen,
+  })),
+)
+const Login2faScreen = lazy(() =>
+  import('@/features/auth/screens/Login2faScreen').then((m) => ({
+    default: m.Login2faScreen,
+  })),
+)
+const ResetPasswordScreen = lazy(() =>
+  import('@/features/auth/screens/ResetPasswordScreen').then((m) => ({
+    default: m.ResetPasswordScreen,
+  })),
+)
 
 const DashboardScreen = lazy(() =>
   import('@/features/dashboard/screens/DashboardScreen').then((m) => ({
@@ -75,6 +90,9 @@ export function AppRoutes() {
         <Route path="/entrar" element={<LoginScreen />} />
         <Route path="/cadastro" element={<RegisterScreen />} />
         <Route path="/recuperar-senha" element={<PasswordRecoveryScreen />} />
+        <Route path="/verificar-email" element={<VerifyEmailScreen />} />
+        <Route path="/login-2fa" element={<Login2faScreen />} />
+        <Route path="/redefinir-senha" element={<ResetPasswordScreen />} />
       </Route>
 
       {/* Rotas protegidas */}

@@ -11,7 +11,9 @@ createRoot(document.getElementById('root')!).render(
 )
 
 // Registra o service worker para habilitar PWA + notificações do sistema.
-// Em dev, só registra se estiver em localhost (SW exige HTTPS ou localhost).
-if (import.meta.env.PROD || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+// Em dev o SW não é registrado porque sua estratégia cache-first
+// intercepta os módulos servidos pelo Vite e serve versões stale,
+// quebrando HMR e atualizações de código.
+if (import.meta.env.PROD) {
   registerServiceWorker().catch((err) => console.error('[sw] registro falhou:', err))
 }

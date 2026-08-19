@@ -1,3 +1,6 @@
 export { useLogin, type UseLoginResult } from './useLogin'
 export { useRegister, type UseRegisterResult } from './useRegister'
 export { usePasswordRecovery, type UsePasswordRecoveryResult } from './usePasswordRecovery'
+export { useVerifyEmail, type UseVerifyEmailResult } from './useVerifyEmail'
+export { useLogin2fa, type UseLogin2faResult } from './useLogin2fa'
+export { useResetPassword, type UseResetPasswordResult } from './useResetPassword'

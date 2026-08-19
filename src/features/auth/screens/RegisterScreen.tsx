@@ -57,7 +57,7 @@ export function RegisterScreen() {
         title: 'Solicitação enviada',
         description: result.message ?? 'Você receberá um e-mail de verificação.',
       })
-      navigate('/entrar')
+      navigate('/verificar-email', { replace: true, state: { email: values.workEmail } })
     } else if (result.status === 'error') {
       setRegisterError(result.message ?? 'Não foi possível concluir o cadastro.')
     }

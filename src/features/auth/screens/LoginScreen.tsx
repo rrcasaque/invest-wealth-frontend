@@ -38,10 +38,19 @@ export function LoginScreen() {
     setAuthError(null)
     const result = await submit(values)
     if (result.status === 'success' && result.session) {
-      login(result.session)
+      login(result.session, result.accessToken)
       toast({ title: 'Bem-vindo de volta', description: 'Sessão iniciada com sucesso.' })
       const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname
       navigate(from ?? '/painel', { replace: true })
+    } else if (result.status === '2fa_required' && result.ticket) {
+      toast({
+        title: 'Código enviado',
+        description: result.message ?? 'Enviamos um código de verificação para o seu e-mail.',
+      })
+      navigate('/login-2fa', {
+        replace: true,
+        state: { ticket: result.ticket, email: values.email },
+      })
     } else if (result.status === 'error') {
       setAuthError(result.message ?? 'Não foi possível entrar.')
     }

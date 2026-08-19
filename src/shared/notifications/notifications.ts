@@ -6,9 +6,26 @@
  * e o handler `push` em sw.js exibe a notificação do sistema.
  */
 
+import { getAccessToken, refreshAccessToken } from '@/features/auth/services/auth.service'
+
 const SW_PATH = '/sw.js'
 const API_URL = import.meta.env.VITE_API_URL ?? ''
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY ?? ''
+
+/**
+ * Headers de autenticação para chamadas autenticadas ao backend.
+ * O access token vive em memória (auth.service); em 401 o AuthContext
+ * dispara um /auth/refresh via cookie HttpOnly.
+ */
+async function authHeaders(extra?: Record<string, string>): Promise<Record<string, string>> {
+  let token = getAccessToken()
+  if (!token) {
+    token = await refreshAccessToken()
+  }
+  const headers: Record<string, string> = { ...extra }
+  if (token) headers.Authorization = `Bearer ${token}`
+  return headers
+}
 
 export function isNotificationSupported(): boolean {
   return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator
@@ -150,11 +167,13 @@ export async function subscribeToPushNotifications(): Promise<{
     }
   }
 
-  // Envia a inscrição para o backend persistir
+  // Envia a inscrição para o backend persistir (endpoint autenticado).
   try {
+    const headers = await authHeaders({ 'Content-Type': 'application/json' })
     const res = await fetch(`${API_URL}/notifications/subscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
+      credentials: 'include',
       body: JSON.stringify(subscription.toJSON()),
     })
     if (!res.ok) {
@@ -184,9 +203,10 @@ export async function unsubscribeFromPushNotifications(): Promise<{
       const endpoint = sub.endpoint
       await sub.unsubscribe()
       if (API_URL && endpoint) {
+        const headers = await authHeaders()
         await fetch(
           `${API_URL}/notifications/unsubscribe/${encodeURIComponent(endpoint)}`,
-          { method: 'DELETE' },
+          { method: 'DELETE', headers, credentials: 'include' },
         ).catch(() => { })
       }
     }
