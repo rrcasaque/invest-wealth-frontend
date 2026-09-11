@@ -1,10 +1,7 @@
 import * as React from 'react'
-import {
-  getStoredTheme,
-  getSystemTheme,
-  storeTheme,
-  type Theme,
-} from '@/shared/storage/theme-storage'
+import { useAuth } from '@/shared/auth'
+import { api } from '@/shared/api/client'
+import { getSystemTheme, type Theme } from '@/shared/storage/theme-storage'
 
 interface ThemeContextValue {
   theme: Theme
@@ -27,52 +24,42 @@ export interface ThemeProviderProps {
   storageKey?: string
 }
 
-export function ThemeProvider({
-  children,
-  defaultTheme,
-}: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<Theme>(
-    () => getStoredTheme() ?? defaultTheme ?? getSystemTheme(),
-  )
+interface PreferencesResponse {
+  theme: 'DARK' | 'LIGHT'
+}
+
+export function ThemeProvider({ children, defaultTheme }: ThemeProviderProps) {
+  const { session, isRestoring } = useAuth()
+  const [theme, setThemeState] = React.useState<Theme>(defaultTheme ?? getSystemTheme())
 
   React.useEffect(() => {
+    window.localStorage.removeItem('investwealth-theme')
     applyThemeToDocument(theme)
   }, [theme])
 
-  // Sync across tabs / windows
   React.useEffect(() => {
-    const handler = (event: StorageEvent) => {
-      if (event.key === 'investwealth-theme' && event.newValue) {
-        const next = event.newValue as Theme
-        if (next === 'dark' || next === 'light') setThemeState(next)
-      }
-    }
-    window.addEventListener('storage', handler)
-    return () => window.removeEventListener('storage', handler)
-  }, [])
-
-  // React to system changes when the user hasn't chosen explicitly
-  React.useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: light)')
-    const handler = () => {
-      if (!getStoredTheme()) setThemeState(getSystemTheme())
-    }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
+    if (isRestoring || !session) return
+    let active = true
+    void api.get<PreferencesResponse>('/preferences').then((preferences) => {
+      if (active) setThemeState(preferences.theme === 'DARK' ? 'dark' : 'light')
+    }).catch(() => {
+      // Usa o tema do sistema enquanto a preferência ainda não puder ser carregada.
+    })
+    return () => { active = false }
+  }, [isRestoring, session])
 
   const setTheme = React.useCallback((next: Theme) => {
     setThemeState(next)
-    storeTheme(next)
-  }, [])
+    if (session) {
+      void api.patch('/preferences', { theme: next.toUpperCase() }).catch(() => {
+        // O estado visual permanece responsivo mesmo se a gravação falhar.
+      })
+    }
+  }, [session])
 
   const toggleTheme = React.useCallback(() => {
-    setThemeState((current) => {
-      const next = current === 'dark' ? 'light' : 'dark'
-      storeTheme(next)
-      return next
-    })
-  }, [])
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }, [setTheme, theme])
 
   const value = React.useMemo<ThemeContextValue>(
     () => ({ theme, setTheme, toggleTheme }),
@@ -84,8 +71,6 @@ export function ThemeProvider({
 
 export function useTheme(): ThemeContextValue {
   const ctx = React.useContext(ThemeContext)
-  if (!ctx) {
-    throw new Error('useTheme deve ser usado dentro de <ThemeProvider>')
-  }
+  if (!ctx) throw new Error('useTheme deve ser usado dentro de <ThemeProvider>')
   return ctx
 }
