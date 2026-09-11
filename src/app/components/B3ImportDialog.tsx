@@ -19,7 +19,7 @@ import {
 } from '@/shared/ui/table'
 import { useToast } from '@/shared/ui/toast'
 import { importPortfolioFile } from '@/shared/services/portfolio-import.service'
-import { storePortfolio } from '@/shared/storage/portfolio-storage'
+import { investorWalletService } from '@/features/investor-wallet/services/investor-wallet.service'
 import type { PortfolioImportResult, PortfolioPosition } from '@/shared/types/portfolio'
 import { formatCurrency } from '@/shared/utils'
 
@@ -80,16 +80,23 @@ export function B3ImportDialog({ onImported }: B3ImportDialogProps) {
 
   const totalValue = positions.reduce((sum, position) => sum + position.value, 0)
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!result || positions.length === 0) return
-    storePortfolio({ ...result, positions, totalValue })
-    toast({
-      title: 'Carteira importada',
-      description: `${positions.length} ativos salvos a partir de ${result.fileName}.`,
-      variant: 'success',
-    })
-    onImported?.()
-    setOpen(false)
+    setStatus('parsing')
+    setErrorMsg(null)
+    try {
+      await investorWalletService.importB3({ ...result, positions, totalValue })
+      toast({
+        title: 'Carteira importada',
+        description: `${positions.length} ativos salvos a partir de ${result.fileName}.`,
+        variant: 'success',
+      })
+      onImported?.()
+      setOpen(false)
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Falha ao salvar a carteira.')
+      setStatus('error')
+    }
   }
 
   return (

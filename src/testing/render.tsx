@@ -19,12 +19,12 @@ export function renderWithProviders(
   { initialEntries = ['/'] }: RenderWithProvidersOptions = {},
 ) {
   return render(
-    <ThemeProvider defaultTheme="dark">
-      <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider defaultTheme="dark">
         <MemoryRouter initialEntries={initialEntries}>
           <TooltipProvider>{ui}</TooltipProvider>
         </MemoryRouter>
-      </AuthProvider>
-    </ThemeProvider>,
+      </ThemeProvider>
+    </AuthProvider>,
   )
 }

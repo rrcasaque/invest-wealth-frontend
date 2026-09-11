@@ -1,5 +1,5 @@
 /** Categoria de ativo da carteira de investidor. */
-export type WalletAssetType = 'renda-fixa' | 'cripto' | 'aluguel'
+export type WalletAssetType = 'fii' | 'acao' | 'renda-fixa' | 'cripto' | 'aluguel'
 
 /** Campos comuns a todos os ativos da carteira. */
 export interface WalletAssetBase {
@@ -12,6 +12,18 @@ export interface WalletAssetBase {
   notes?: string
   /** Data de criação do registro (ISO yyyy-MM-dd). */
   createdAt: string
+}
+
+/** Ação ou fundo imobiliário importado da B3. */
+export interface MarketAsset extends WalletAssetBase {
+  type: 'fii' | 'acao'
+  ticker: string
+  cnpj?: string
+  institution?: string
+  quantity: number
+  purchasePrice?: number
+  currentPrice?: number
+  currentValue?: number
 }
 
 /** Ativo de renda fixa (CDB, Tesouro, LCI/LCA, etc.). */
@@ -50,4 +62,4 @@ export interface RentalAsset extends WalletAssetBase {
 }
 
 /** Ativo da carteira de investidor (união discriminada). */
-export type WalletAsset = FixedIncomeAsset | CryptoAsset | RentalAsset
+export type WalletAsset = MarketAsset | FixedIncomeAsset | CryptoAsset | RentalAsset

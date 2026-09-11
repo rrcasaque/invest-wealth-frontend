@@ -1,5 +1,5 @@
 import { AlertCircle, Inbox } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PageContainer, PageHeader, PageTitle, PageDescription, ResponsiveGrid } from '@/shared/layout'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { usePortfolioBalancing } from '../hooks/usePortfolioBalancing'
@@ -8,17 +8,33 @@ import {
   AllocationComparisonChart,
   RecommendationList,
 } from '../components'
-import { getStoredPositions, getStoredPortfolioMeta } from '@/shared/storage/portfolio-storage'
 import { B3ImportDialog } from '@/app/components/B3ImportDialog'
-import { formatCurrency, formatDate } from '@/shared/utils'
+import { investorWalletService } from '@/features/investor-wallet/services/investor-wallet.service'
+import { formatCurrency } from '@/shared/utils'
+import type { MarketAsset } from '@/shared/types/wallet'
 
 export function PortfolioBalancingScreen() {
   const { result, status, error, calculate } = usePortfolioBalancing()
   const [portfolioVersion, setPortfolioVersion] = useState(0)
-  const positions = getStoredPositions()
-  const meta = getStoredPortfolioMeta()
+  const [positions, setPositions] = useState<{ ticker: string; value: number }[]>([])
+  const [isLoadingAssets, setIsLoadingAssets] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    setIsLoadingAssets(true)
+    void investorWalletService.list().then((assets) => {
+      if (!active) return
+      setPositions((assets
+        .filter((asset) => asset.type === 'fii' || asset.type === 'acao') as MarketAsset[])
+        .map((asset) => ({ ticker: asset.ticker, value: asset.currentValue ?? 0 })))
+      setIsLoadingAssets(false)
+    }).catch(() => {
+      if (active) setIsLoadingAssets(false)
+    })
+    return () => { active = false }
+  }, [portfolioVersion])
+
   const hasPortfolio = positions.length > 0
-  void portfolioVersion
 
   return (
     <PageContainer maxWidth="wide" className="space-y-6">
@@ -31,18 +47,19 @@ export function PortfolioBalancingScreen() {
         </div>
       </PageHeader>
 
-      {hasPortfolio ? (
+      {isLoadingAssets ? (
+        <ResponsiveGrid cols={{ base: 1, lg: 12 }} gap="md">
+          <Skeleton className="h-[400px] lg:col-span-5" />
+          <Skeleton className="h-[400px] lg:col-span-7" />
+        </ResponsiveGrid>
+      ) : hasPortfolio ? (
         <>
-          {meta && (
-            <p className="break-words text-xs text-muted-foreground">
-              Carteira importada de <span className="break-all font-mono">{meta.fileName}</span> em{' '}
-              {formatDate(meta.importedAt, 'short')} · {positions.length} ativos ·{' '}
-              {formatCurrency(
-                positions.reduce((sum, position) => sum + position.value, 0),
-                { currency: 'BRL' },
-              )}
-            </p>
-          )}
+          <p className="break-words text-xs text-muted-foreground">
+            {positions.length} ativos B3 · {formatCurrency(
+              positions.reduce((sum, position) => sum + position.value, 0),
+              { currency: 'BRL' },
+            )}
+          </p>
 
           <InvestmentCapitalForm
             onCalculate={(newCapital) => calculate({ newCapital })}

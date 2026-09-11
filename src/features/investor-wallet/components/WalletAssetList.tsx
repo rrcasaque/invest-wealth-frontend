@@ -87,6 +87,16 @@ function AssetIcon({ type }: { type: WalletAsset['type'] }) {
 
 function renderDetails(asset: WalletAsset): { label: string; value: string }[] {
   switch (asset.type) {
+    case 'fii':
+    case 'acao':
+      return [
+        { label: 'Ticker', value: asset.ticker },
+        { label: 'Instituição', value: asset.institution ?? '—' },
+        { label: 'Quantidade', value: asset.quantity.toString() },
+        ...(asset.currentPrice !== undefined
+          ? [{ label: 'Preço atual', value: formatCurrency(asset.currentPrice, { currency: 'BRL' }) }]
+          : []),
+      ]
     case 'renda-fixa':
       return [
         { label: 'Instituição', value: asset.institution },
@@ -111,6 +121,8 @@ function renderDetails(asset: WalletAsset): { label: string; value: string }[] {
           ),
         },
       ]
+    default:
+      return []
   }
 }
 

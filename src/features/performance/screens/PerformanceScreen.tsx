@@ -1,5 +1,5 @@
 import { AlertCircle, Inbox } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PageContainer, PageHeader, PageTitle, PageDescription, ResponsiveGrid } from '@/shared/layout'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useToast } from '@/shared/ui/toast'
@@ -10,8 +10,8 @@ import {
   ComparativePerformanceChart,
   BenchmarkCard,
 } from '../components'
-import { getStoredPositions } from '@/shared/storage/portfolio-storage'
 import { B3ImportDialog } from '@/app/components/B3ImportDialog'
+import { investorWalletService } from '@/features/investor-wallet/services/investor-wallet.service'
 
 export function PerformanceScreen() {
   const { data, status, error, period, assetClass, setPeriod, setAssetClass } =
@@ -19,15 +19,27 @@ export function PerformanceScreen() {
   const { visible } = useBenchmarkVisibility()
   const { toast } = useToast()
   const [portfolioVersion, setPortfolioVersion] = useState(0)
-  void portfolioVersion
-  const positions = getStoredPositions()
-  const hasPortfolio = positions.length > 0
+  const [hasPortfolio, setHasPortfolio] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void investorWalletService.list().then((assets) => {
+      if (active) setHasPortfolio(assets.some((asset) => asset.type === 'fii' || asset.type === 'acao'))
+    }).catch(() => {
+      if (active) setHasPortfolio(false)
+    })
+    return () => { active = false }
+  }, [portfolioVersion])
 
   const handleExport = () => {
     toast({
       title: 'Exportação iniciada',
       description: 'O arquivo CSV será gerado em instantes.',
     })
+  }
+
+  if (hasPortfolio === null) {
+    return <PageContainer maxWidth="wide" className="space-y-6"><Skeleton className="h-32" /><Skeleton className="h-[460px]" /></PageContainer>
   }
 
   if (!hasPortfolio) {

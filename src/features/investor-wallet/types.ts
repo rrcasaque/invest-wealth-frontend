@@ -4,6 +4,7 @@ export type {
   FixedIncomeAsset,
   CryptoAsset,
   RentalAsset,
+  MarketAsset,
 } from '@/shared/types/wallet'
 
 import type {
@@ -11,6 +12,7 @@ import type {
   FixedIncomeAsset,
   RentalAsset,
   WalletAssetType,
+  MarketAsset,
 } from '@/shared/types/wallet'
 
 /** Dados para criar um ativo de renda fixa. */
@@ -61,9 +63,12 @@ export interface WalletSummary {
 
 /** Valor "aplicado" em um ativo (para fins de agregação). */
 export function getAssetInvestedValue(
-  asset: FixedIncomeAsset | CryptoAsset | RentalAsset,
+  asset: MarketAsset | FixedIncomeAsset | CryptoAsset | RentalAsset,
 ): number {
   switch (asset.type) {
+    case 'fii':
+    case 'acao':
+      return asset.currentValue ?? asset.quantity * (asset.purchasePrice ?? 0)
     case 'renda-fixa':
       return asset.amount
     case 'cripto':

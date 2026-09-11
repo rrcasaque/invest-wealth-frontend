@@ -6,7 +6,8 @@ import type {
   PortfolioRecommendation,
 } from '../types'
 import { fetchLatestQuotes } from './brapi.service'
-import { getStoredPositions } from '@/shared/storage/portfolio-storage'
+import { investorWalletService } from '@/features/investor-wallet/services/investor-wallet.service'
+import type { MarketAsset } from '@/shared/types/wallet'
 
 const COLORS = [
   'hsl(var(--primary))',
@@ -111,7 +112,10 @@ export function calculateBalancingResult(
 
 export const portfolioBalancingService = {
   async calculate(input: BalancingInput): Promise<BalancingResult> {
-    const positions = getStoredPositions()
+    const walletAssets = await investorWalletService.list()
+    const positions = (walletAssets
+      .filter((asset) => asset.type === 'fii' || asset.type === 'acao') as MarketAsset[])
+      .map((asset) => ({ ticker: asset.ticker, shares: asset.quantity }))
     if (positions.length === 0) {
       throw new Error('Nenhum ativo encontrado. Importe sua carteira da B3 antes de calcular o balanceamento.')
     }

@@ -9,12 +9,12 @@ import {
 import type { AuthSession } from '@/features/auth/types'
 import {
   getAccessToken,
+  getCurrentUser,
   refreshAccessToken,
   revokeSession,
   setAccessToken,
 } from '@/features/auth/services/auth.service'
-
-const SESSION_KEY = 'investwealth-session'
+import { migrateLocalData } from '@/shared/services/local-data-migration.service'
 
 export interface AuthContextValue {
   session: AuthSession | null
@@ -27,58 +27,25 @@ export interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function readStoredSession(): AuthSession | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(SESSION_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as AuthSession
-    if (parsed && typeof parsed.userId === 'string' && typeof parsed.email === 'string') {
-      return parsed
-    }
-  } catch {
-    /* localStorage might be unavailable or corrupted */
-  }
-  return null
-}
-
-function writeStoredSession(session: AuthSession | null): void {
-  if (typeof window === 'undefined') return
-  try {
-    if (session) {
-      window.localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-    } else {
-      window.localStorage.removeItem(SESSION_KEY)
-    }
-  } catch {
-    /* ignore */
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // A sessão (userId/email/name) pode ser persistida em localStorage sem risco
-  // de segurança — não contém credenciais. O access token fica só em memória.
-  const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
-  const [isRestoring, setIsRestoring] = useState<boolean>(() => readStoredSession() !== null)
+  const [session, setSession] = useState<AuthSession | null>(null)
+  const [isRestoring, setIsRestoring] = useState(true)
 
-  // No boot, se há sessão persistida, tenta restaurar o access token via
-  // /auth/refresh (cookie HttpOnly). Se falhar, limpa a sessão.
+  // O refresh token HttpOnly restaura a autenticação; os dados da sessão vêm de /auth/me.
   useEffect(() => {
+    window.localStorage.removeItem('investwealth-session')
     let cancelled = false
-    const stored = readStoredSession()
-    if (!stored) {
-      setIsRestoring(false)
-      return
-    }
     refreshAccessToken()
-      .then((token) => {
+      .then(async (token) => {
+        if (cancelled || !token) return
+        const currentUser = await getCurrentUser()
         if (cancelled) return
-        if (!token) {
-          // Refresh falhou: sessão expirada — limpa.
-          writeStoredSession(null)
-          setSession(null)
+        setSession(currentUser ?? null)
+        if (currentUser) {
+          void migrateLocalData().catch(() => {
+            // Mantém os dados locais para uma próxima tentativa em caso de falha.
+          })
         }
-        // Se token ok, a sessão persistida continua válida.
       })
       .finally(() => {
         if (!cancelled) setIsRestoring(false)
@@ -89,14 +56,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = useCallback((newSession: AuthSession, token?: string) => {
-    writeStoredSession(newSession)
     setSession(newSession)
-    if (token) setAccessToken(token)
+    if (token) {
+      setAccessToken(token)
+      void migrateLocalData().catch(() => {
+        // Mantém os dados locais para uma próxima tentativa em caso de falha.
+      })
+    }
   }, [])
 
   const logout = useCallback(async () => {
     await revokeSession()
-    writeStoredSession(null)
     setSession(null)
   }, [])
 

@@ -45,6 +45,27 @@ let refreshPromise: Promise<string | null> | null = null
  * atualiza o access token em memória. Singleton: chamadas concorrentes
  * compartilham o mesmo promise.
  */
+export async function getCurrentUser(): Promise<AuthResult['session'] | null> {
+  const token = getAccessToken()
+  if (!token) return null
+  try {
+    const response = await fetch(`${API_URL}/auth/me`, {
+      credentials: 'include',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (response.status === 401) {
+      const refreshed = await refreshAccessToken()
+      if (!refreshed) return null
+      return getCurrentUser()
+    }
+    if (!response.ok) return null
+    const user = (await response.json()) as { userId: string; email: string; name: string }
+    return { userId: user.userId, email: user.email, name: user.name }
+  } catch {
+    return null
+  }
+}
+
 export function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {

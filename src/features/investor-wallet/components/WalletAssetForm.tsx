@@ -90,6 +90,8 @@ export function WalletAssetForm({ onCreate }: WalletAssetFormProps) {
           form.rentValue > 0 &&
           num(form.agencyFee) >= 0
         )
+      default:
+        return false
     }
   }
 
@@ -124,6 +126,8 @@ export function WalletAssetForm({ onCreate }: WalletAssetFormProps) {
           agencyFee: num(form.agencyFee),
           notes,
         }
+      default:
+        throw new Error('Tipo de ativo não suportado.')
     }
   }
 

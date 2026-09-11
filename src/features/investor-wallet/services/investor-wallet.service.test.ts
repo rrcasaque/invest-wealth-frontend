@@ -1,38 +1,74 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockApi = vi.hoisted(() => {
+  let nextId = 1
+  let assets: Array<Record<string, unknown>> = []
+  const toAsset = (body: Record<string, unknown>) => ({
+    id: nextId++,
+    userId: 1,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ticker: null,
+    cnpj: null,
+    notes: null,
+    institution: null,
+    quantity: null,
+    purchasePrice: null,
+    currentPrice: null,
+    currentValue: null,
+    acquiredAt: null,
+    fixedIncomeInstitution: null,
+    fixedIncomeAmount: null,
+    fixedIncomeRate: null,
+    maturity: null,
+    propertyValue: null,
+    rentValue: null,
+    agencyFee: null,
+    ...body,
+  })
+
+  return {
+    reset: () => { assets = []; nextId = 1 },
+    api: {
+      post: async (_path: string, body: Record<string, unknown>) => {
+        const asset = toAsset(body)
+        assets.push(asset)
+        return asset
+      },
+      get: async (path: string) => {
+        if (path === '/wallet/assets') return assets
+        return {
+          totalInvested: assets.reduce((sum, asset) => sum + Number(asset.fixedIncomeAmount ?? asset.propertyValue ?? (Number(asset.quantity ?? 0) * Number(asset.purchasePrice ?? 0))), 0),
+          monthlyIncome: assets.reduce((sum, asset) => sum + (asset.rentValue ? Number(asset.rentValue) * (1 - Number(asset.agencyFee ?? 0) / 100) : 0), 0),
+          totalAssets: assets.length,
+          byType: {
+            FII: { count: 0, value: 0 }, ACAO: { count: 0, value: 0 },
+            RENDA_FIXA: { count: assets.filter((a) => a.type === 'RENDA_FIXA').length, value: 5000 },
+            CRIPTO: { count: assets.filter((a) => a.type === 'CRIPTO').length, value: 20000 },
+            ALUGUEL: { count: assets.filter((a) => a.type === 'ALUGUEL').length, value: 400000 },
+          },
+        }
+      },
+      delete: async (path: string) => {
+        const id = Number(path.split('/').pop())
+        assets = assets.filter((asset) => asset.id !== id)
+        return undefined
+      },
+    },
+  }
+})
+
+vi.mock('@/shared/api/client', () => mockApi)
+
 import { investorWalletService } from './investor-wallet.service'
-import { clearWalletAssets } from '@/shared/storage/wallet-storage'
 
-beforeEach(() => {
-  window.localStorage.clear()
-})
-
-afterEach(() => {
-  clearWalletAssets()
-})
+beforeEach(() => mockApi.reset())
 
 describe('investorWalletService', () => {
   it('cria e lista ativos de renda fixa, cripto e aluguel', async () => {
-    await investorWalletService.create({
-      type: 'renda-fixa',
-      name: 'Tesouro Selic',
-      institution: 'Banco X',
-      amount: 1000,
-      rate: 10,
-    })
-    await investorWalletService.create({
-      type: 'cripto',
-      name: 'Bitcoin',
-      symbol: 'BTC',
-      quantity: 0.5,
-      purchasePrice: 200000,
-    })
-    await investorWalletService.create({
-      type: 'aluguel',
-      name: 'Apto Centro',
-      propertyValue: 300000,
-      rentValue: 1500,
-      agencyFee: 150,
-    })
+    await investorWalletService.create({ type: 'renda-fixa', name: 'Tesouro Selic', institution: 'Banco X', amount: 1000, rate: 10 })
+    await investorWalletService.create({ type: 'cripto', name: 'Bitcoin', symbol: 'BTC', quantity: 0.5, purchasePrice: 200000 })
+    await investorWalletService.create({ type: 'aluguel', name: 'Apto Centro', propertyValue: 300000, rentValue: 1500, agencyFee: 150 })
 
     const list = await investorWalletService.list()
     expect(list).toHaveLength(3)
@@ -42,32 +78,12 @@ describe('investorWalletService', () => {
   })
 
   it('sumariza total aplicado e renda mensal líquida de aluguéis', async () => {
-    await investorWalletService.create({
-      type: 'renda-fixa',
-      name: 'CDB',
-      institution: 'Banco Y',
-      amount: 5000,
-      rate: 12,
-    })
-    await investorWalletService.create({
-      type: 'cripto',
-      name: 'ETH',
-      symbol: 'ETH',
-      quantity: 2,
-      purchasePrice: 10000,
-    })
-    await investorWalletService.create({
-      type: 'aluguel',
-      name: 'Casa',
-      propertyValue: 400000,
-      rentValue: 2000,
-      agencyFee: 10,
-    })
+    await investorWalletService.create({ type: 'renda-fixa', name: 'CDB', institution: 'Banco Y', amount: 5000, rate: 12 })
+    await investorWalletService.create({ type: 'cripto', name: 'ETH', symbol: 'ETH', quantity: 2, purchasePrice: 10000 })
+    await investorWalletService.create({ type: 'aluguel', name: 'Casa', propertyValue: 400000, rentValue: 2000, agencyFee: 10 })
 
     const summary = await investorWalletService.summarize()
-    // 5000 + (2 * 10000) + 400000 = 425000
     expect(summary.totalInvested).toBe(425000)
-    // 2000 * (1 - 10/100) = 1800
     expect(summary.monthlyIncome).toBe(1800)
     expect(summary.totalAssets).toBe(3)
     expect(summary.byType['renda-fixa'].value).toBe(5000)
@@ -76,15 +92,8 @@ describe('investorWalletService', () => {
   })
 
   it('remove um ativo pelo id', async () => {
-    const created = await investorWalletService.create({
-      type: 'renda-fixa',
-      name: 'LCI',
-      institution: 'Banco Z',
-      amount: 2000,
-      rate: 9,
-    })
+    const created = await investorWalletService.create({ type: 'renda-fixa', name: 'LCI', institution: 'Banco Z', amount: 2000, rate: 9 })
     await investorWalletService.remove(created.id)
-    const list = await investorWalletService.list()
-    expect(list).toHaveLength(0)
+    expect(await investorWalletService.list()).toHaveLength(0)
   })
 })

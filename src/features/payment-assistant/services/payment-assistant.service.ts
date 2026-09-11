@@ -1,119 +1,95 @@
-import type {
-  MonthlySummary,
-  PaymentReminder,
-  PaymentReminderInput,
-} from '../types'
-import { getStoredPayments, storePayments } from '@/shared/storage/payment-storage'
+import { api } from '@/shared/api/client'
+import type { MonthlySummary, PaymentReminder, PaymentReminderInput } from '../types'
 
-function uuid(): string {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+interface ApiPayment {
+  id: number
+  title: string
+  notes: string | null
+  category: string
+  amount: number | string
+  dueDate: string
+  status: string
+  priority: string
+  recurrence: string
+  paidAt: string | null
+  paymentMethod: string | null
+  receipt: string | null
+  createdAt: string
 }
 
-function read(): PaymentReminder[] {
-  return getStoredPayments()
+const toApi = (value: string) => value.toUpperCase()
+const fromApi = (value: string) => value.toLowerCase()
+
+function mapPayment(item: ApiPayment): PaymentReminder {
+  return {
+    id: String(item.id),
+    title: item.title,
+    notes: item.notes ?? undefined,
+    category: fromApi(item.category) as PaymentReminder['category'],
+    amount: Number(item.amount),
+    dueDate: item.dueDate.slice(0, 10),
+    status: fromApi(item.status) as PaymentReminder['status'],
+    priority: fromApi(item.priority) as PaymentReminder['priority'],
+    recurrence: fromApi(item.recurrence) as PaymentReminder['recurrence'],
+    paidAt: item.paidAt?.slice(0, 10) ?? null,
+    paymentMethod: item.paymentMethod ?? undefined,
+    receipt: item.receipt ?? undefined,
+    createdAt: item.createdAt.slice(0, 10),
+  }
 }
 
-function write(reminders: PaymentReminder[]): void {
-  storePayments(reminders)
+function toApiInput(input: PaymentReminderInput) {
+  return {
+    ...input,
+    category: toApi(input.category),
+    priority: toApi(input.priority),
+    recurrence: toApi(input.recurrence),
+  }
 }
 
-/**
- * Serviço de Assistente de Pagamentos.
- *
- * Persiste os lembretes em localStorage. Os métodos são async para
- * manter compatibilidade com a interface do hook e simular latência.
- */
 class PaymentAssistantService {
   async list(): Promise<PaymentReminder[]> {
-    await delay(150)
-    return [...read()].sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    const items = await api.get<ApiPayment[]>('/payments')
+    return items.map(mapPayment)
   }
 
   async create(input: PaymentReminderInput): Promise<PaymentReminder> {
-    await delay(200)
-    const reminder: PaymentReminder = {
-      id: uuid(),
-      ...input,
-      status: 'pending',
-      paidAt: null,
-      createdAt: new Date().toISOString().slice(0, 10),
-    }
-    const reminders = read()
-    reminders.push(reminder)
-    write(reminders)
-    return reminder
+    const item = await api.post<ApiPayment>('/payments', toApiInput(input))
+    return mapPayment(item)
   }
 
   async update(id: string, patch: Partial<PaymentReminder>): Promise<PaymentReminder> {
-    await delay(150)
-    const reminders = read()
-    const idx = reminders.findIndex((r) => r.id === id)
-    if (idx === -1) throw new Error('Lembrete não encontrado.')
-    reminders[idx] = { ...reminders[idx], ...patch }
-    write(reminders)
-    return reminders[idx]
+    const payload = { ...patch } as Record<string, unknown>
+    if (patch.category) payload.category = toApi(patch.category)
+    if (patch.priority) payload.priority = toApi(patch.priority)
+    if (patch.recurrence) payload.recurrence = toApi(patch.recurrence)
+    const item = await api.patch<ApiPayment>(`/payments/${id}`, payload)
+    return mapPayment(item)
   }
 
   async markAsPaid(id: string, method?: string): Promise<PaymentReminder> {
-    return this.update(id, {
-      status: 'paid',
-      paidAt: new Date().toISOString().slice(0, 10),
-      paymentMethod: method ?? 'Pix',
-    })
+    const item = await api.patch<ApiPayment>(`/payments/${id}/pay`, { paymentMethod: method ?? 'Pix' })
+    return mapPayment(item)
   }
 
   async markAsPending(id: string): Promise<PaymentReminder> {
-    return this.update(id, {
-      status: 'pending',
-      paidAt: null,
-      paymentMethod: undefined,
-    })
+    const item = await api.patch<ApiPayment>(`/payments/${id}/pending`)
+    return mapPayment(item)
   }
 
   async remove(id: string): Promise<void> {
-    await delay(100)
-    write(read().filter((r) => r.id !== id))
+    await api.delete(`/payments/${id}`)
   }
 
   async summarize(month: string): Promise<MonthlySummary> {
-    await delay(100)
-    const monthReminders = read().filter((r) => r.dueDate.startsWith(month))
-    const [year, mon] = month.split('-')
-    const label = new Date(Number(year), Number(mon) - 1, 1).toLocaleDateString(
-      'pt-BR',
-      { month: 'long', year: 'numeric' },
-    )
-    const summary: MonthlySummary = {
-      month,
-      label: label.charAt(0).toUpperCase() + label.slice(1),
-      totalPayments: monthReminders.length,
-      paidCount: 0,
-      pendingCount: 0,
-      overdueCount: 0,
-      totalAmount: 0,
-      paidAmount: 0,
-      pendingAmount: 0,
-      overdueAmount: 0,
-    }
-    for (const r of monthReminders) {
-      summary.totalAmount += r.amount
-      if (r.status === 'paid') {
-        summary.paidCount += 1
-        summary.paidAmount += r.amount
-      } else if (r.status === 'overdue') {
-        summary.overdueCount += 1
-        summary.overdueAmount += r.amount
-      } else if (r.status === 'pending') {
-        summary.pendingCount += 1
-        summary.pendingAmount += r.amount
-      }
-    }
-    return summary
+    const summary = await api.get<MonthlySummary>(`/payments/summary?month=${encodeURIComponent(month)}`)
+    const [year, monthNumber] = month.split('-')
+    const label = new Date(Number(year), Number(monthNumber) - 1, 1).toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric',
+    })
+    return { ...summary, label: label.charAt(0).toUpperCase() + label.slice(1) }
   }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export const paymentAssistantService = new PaymentAssistantService()
