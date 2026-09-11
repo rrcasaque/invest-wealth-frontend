@@ -1,4 +1,4 @@
-import { AlertCircle, Briefcase, Inbox } from 'lucide-react'
+import { AlertCircle, Briefcase, Inbox, RefreshCw } from 'lucide-react'
 import {
   PageContainer,
   PageHeader,
@@ -6,6 +6,7 @@ import {
   PageDescription,
 } from '@/shared/layout'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { Button } from '@/shared/ui/button'
 import { B3ImportDialog } from '@/app/components/B3ImportDialog'
 import { useInvestorWallet } from '../hooks/useInvestorWallet'
 import {
@@ -48,6 +49,14 @@ export function InvestorWalletScreen() {
         </div>
         {hasContent && (
           <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => void refresh(true)}
+              disabled={status === 'loading'}
+            >
+              <RefreshCw className={status === 'loading' ? 'size-4 animate-spin' : 'size-4'} />
+              Atualizar carteira
+            </Button>
             <B3ImportDialog onImported={refresh} />
             <WalletAssetForm onCreate={create} />
           </div>

@@ -13,14 +13,14 @@ import {
   PortfolioKpiCard,
   RecentTransactionsTable,
 } from '../components'
-import { getStoredPositions } from '@/shared/storage/portfolio-storage'
-import { getStoredWalletAssets } from '@/shared/storage/wallet-storage'
-
 export function DashboardScreen() {
   const { data, status, error, refetch } = usePortfolioSummary()
-  const positions = getStoredPositions()
-  const walletAssets = getStoredWalletAssets()
-  const hasContent = positions.length > 0 || walletAssets.length > 0
+
+  if (status === 'loading' || status === 'idle') {
+    return <DashboardSkeleton />
+  }
+
+  const hasContent = data !== null && data.summary.totalValue > 0
 
   if (!hasContent) {
     return (
@@ -46,10 +46,6 @@ export function DashboardScreen() {
         </Button>
       </PageContainer>
     )
-  }
-
-  if (status === 'loading' || status === 'idle') {
-    return <DashboardSkeleton />
   }
 
   if (status === 'error' || !data) {

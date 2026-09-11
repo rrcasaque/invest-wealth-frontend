@@ -1,5 +1,4 @@
 import type { PortfolioImportResult, PortfolioPosition } from '../types/portfolio'
-
 const STORAGE_KEY = 'investwealth-portfolio'
 const IMPORT_META_KEY = 'investwealth-portfolio-meta'
 
