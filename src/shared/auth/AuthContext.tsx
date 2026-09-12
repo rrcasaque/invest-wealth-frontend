@@ -36,38 +36,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.removeItem('investwealth-session')
     let cancelled = false
     
-    // Função auxiliar para tentar restaurar a sessão com retry
-    const attemptRestore = async (retries = 2): Promise<void> => {
-      for (let attempt = 0; attempt <= retries; attempt++) {
+    // Função auxiliar para tentar restaurar a sessão
+    const attemptRestore = async (): Promise<void> => {
+      if (cancelled) return
+      
+      try {
+        const token = await refreshAccessToken()
+        if (cancelled || !token) return
+        
+        const currentUser = await getCurrentUser()
         if (cancelled) return
         
-        try {
-          const token = await refreshAccessToken()
-          if (cancelled || !token) {
-            if (attempt < retries) {
-              // Aguarda um pouco antes de tentar novamente
-              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
-              continue
-            }
-            return
-          }
-          
-          const currentUser = await getCurrentUser()
-          if (cancelled) return
-          
-          setSession(currentUser ?? null)
-          if (currentUser) {
-            void migrateLocalData().catch(() => {
-              // Mantém os dados locais para uma próxima tentativa em caso de falha.
-            })
-          }
-          return // Sucesso, sai do loop
-        } catch (error) {
-          if (attempt < retries) {
-            // Aguarda antes de tentar novamente
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
-          }
+        setSession(currentUser ?? null)
+        if (currentUser) {
+          void migrateLocalData().catch(() => {
+            // Mantém os dados locais para uma próxima tentativa em caso de falha.
+          })
         }
+      } catch (error) {
+        // Falha silenciosa - usuário será redirecionado para login se necessário
       }
     }
     

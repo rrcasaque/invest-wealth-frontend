@@ -1,13 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { Bell, BellRing, X, Zap } from 'lucide-react'
+import { X, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { cn } from '@/shared/utils/cn'
 import { appConfig, primaryNav, secondaryNav, type NavItem } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import { useToast } from '@/shared/ui/toast'
 import {
-  sendTestNotification,
-  sendScheduledNotification,
   subscribeToPushNotifications,
   unsubscribeFromPushNotifications,
   hasPushSubscription,
@@ -111,7 +109,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </ul>
         </nav>
 
-        {/* Footer: secondary nav + testar notificação */}
+        {/* Footer: secondary nav + notificações */}
         <div className="flex flex-col gap-3 border-t border-sidebar-border px-4 py-4">
           <ul className="flex flex-col gap-1">
             {secondaryNav.map((item) => (
@@ -121,51 +119,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             ))}
           </ul>
           <PushSubscriptionButton />
-          <TestNotificationButton />
-          <TestScheduledNotificationButton />
         </div>
       </aside>
     </>
-  )
-}
-
-function TestNotificationButton() {
-  const { toast } = useToast()
-  const [isSending, setIsSending] = useState(false)
-
-  const handleClick = async () => {
-    setIsSending(true)
-    try {
-      const result = await sendTestNotification()
-      if (result.ok) {
-        toast({
-          title: 'Notificação enviada',
-          description: 'Verifique a barra de notificações do seu dispositivo.',
-          variant: 'success',
-        })
-      } else {
-        toast({
-          title: 'Não foi possível notificar',
-          description: result.error,
-          variant: 'destructive',
-        })
-      }
-    } finally {
-      setIsSending(false)
-    }
-  }
-
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="w-full justify-start gap-2"
-      onClick={handleClick}
-      disabled={isSending}
-    >
-      <Bell className="size-4" />
-      Testar Notificação
-    </Button>
   )
 }
 
@@ -244,51 +200,6 @@ function PushSubscriptionButton() {
     >
       <Zap className="size-4" />
       {subscribed ? 'Notificações Ativas' : 'Ativar Notificações'}
-    </Button>
-  )
-}
-
-function TestScheduledNotificationButton() {
-  const { toast } = useToast()
-  const [isScheduling, setIsScheduling] = useState(false)
-
-  const handleClick = async () => {
-    setIsScheduling(true)
-    try {
-      const FIVE_MINUTES_MS = 5 * 60 * 1000
-      const result = await sendScheduledNotification(FIVE_MINUTES_MS)
-      if (result.ok && result.scheduledAt) {
-        const horario = new Date(result.scheduledAt).toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-        toast({
-          title: 'Notificação agendada',
-          description: `Você receberá uma notificação às ${horario} (daqui a 5 minutos). Mantenha o app aberto ou instalado.`,
-          variant: 'success',
-        })
-      } else {
-        toast({
-          title: 'Não foi possível agendar',
-          description: result.error,
-          variant: 'destructive',
-        })
-      }
-    } finally {
-      setIsScheduling(false)
-    }
-  }
-
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="w-full justify-start gap-2"
-      onClick={handleClick}
-      disabled={isScheduling}
-    >
-      <BellRing className="size-4" />
-      Testar Notificação (5min)
     </Button>
   )
 }

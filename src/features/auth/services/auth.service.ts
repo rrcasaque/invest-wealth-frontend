@@ -74,7 +74,9 @@ export async function getCurrentUser(): Promise<AuthResult['session'] | null> {
 }
 
 export function refreshAccessToken(): Promise<string | null> {
+  // Se já existe uma chamada em andamento, retorna o mesmo promise
   if (refreshPromise) return refreshPromise
+
   refreshPromise = (async () => {
     try {
       // Tenta usar o cookie HttpOnly primeiro (método preferido)
@@ -117,17 +119,19 @@ export function refreshAccessToken(): Promise<string | null> {
       setAccessToken(null)
       window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
       return null
-    } catch {
+    } catch (error) {
       setAccessToken(null)
       window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
       return null
     } finally {
-      // Libera o lock após microtasks drenarem.
+      // Aguarda um pouco antes de liberar o lock para evitar race conditions
+      // em ambientes com React Strict Mode (desenvolvimento)
       setTimeout(() => {
         refreshPromise = null
-      }, 0)
+      }, 100)
     }
   })()
+
   return refreshPromise
 }
 
