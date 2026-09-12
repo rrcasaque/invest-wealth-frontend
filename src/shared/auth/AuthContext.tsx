@@ -55,6 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (!session) return
+    const refreshInterval = window.setInterval(() => {
+      void refreshAccessToken()
+    }, 10 * 60 * 1000)
+    return () => window.clearInterval(refreshInterval)
+  }, [session])
+
   const login = useCallback((newSession: AuthSession, token?: string) => {
     setSession(newSession)
     if (token) {
