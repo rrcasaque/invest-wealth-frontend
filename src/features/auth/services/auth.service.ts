@@ -44,13 +44,24 @@ interface ApiResponseBody {
   ticket?: string
 }
 
-/** Sinaliza que um refresh já está em andamento para evitar chamadas concorrentes. */
+/** 
+ * Sinaliza que um refresh já está em andamento para evitar chamadas concorrentes.
+ * Mantido por tempo suficiente para lidar com React Strict Mode (desenvolvimento).
+ */
 let refreshPromise: Promise<string | null> | null = null
+let refreshPromiseTimestamp = 0
+let refreshPromiseClearTimeout: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * Tempo mínimo (ms) para manter o singleton refreshPromise ativo.
+ * Previne múltiplas chamadas simultâneas causadas por React Strict Mode.
+ */
+const REFRESH_SINGLETON_MIN_DURATION_MS = 2000
 
 /**
  * Chama /auth/refresh (cookie HttpOnly é enviado automaticamente) e
  * atualiza o access token em memória. Singleton: chamadas concorrentes
- * compartilham o mesmo promise.
+ * compartilham o mesmo promise e o resultado é cacheado por um período mínimo.
  */
 export async function getCurrentUser(): Promise<AuthResult['session'] | null> {
   const token = getAccessToken()
@@ -75,7 +86,22 @@ export async function getCurrentUser(): Promise<AuthResult['session'] | null> {
 
 export function refreshAccessToken(): Promise<string | null> {
   // Se já existe uma chamada em andamento, retorna o mesmo promise
-  if (refreshPromise) return refreshPromise
+  if (refreshPromise) {
+    const elapsed = Date.now() - refreshPromiseTimestamp
+    // Se ainda está dentro do período mínimo, retorna o mesmo promise
+    if (elapsed < REFRESH_SINGLETON_MIN_DURATION_MS) {
+      return refreshPromise
+    }
+  }
+
+  // Cancela qualquer timeout pendente
+  if (refreshPromiseClearTimeout) {
+    clearTimeout(refreshPromiseClearTimeout)
+    refreshPromiseClearTimeout = null
+  }
+
+  // Marca o timestamp de início
+  refreshPromiseTimestamp = Date.now()
 
   refreshPromise = (async () => {
     try {
@@ -124,11 +150,16 @@ export function refreshAccessToken(): Promise<string | null> {
       window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
       return null
     } finally {
-      // Aguarda um pouco antes de liberar o lock para evitar race conditions
-      // em ambientes com React Strict Mode (desenvolvimento)
-      setTimeout(() => {
+      // Calcula quanto tempo ainda falta para completar o período mínimo
+      const elapsed = Date.now() - refreshPromiseTimestamp
+      const remainingTime = Math.max(0, REFRESH_SINGLETON_MIN_DURATION_MS - elapsed)
+
+      // Agenda a limpeza do singleton após o período mínimo
+      refreshPromiseClearTimeout = setTimeout(() => {
         refreshPromise = null
-      }, 100)
+        refreshPromiseTimestamp = 0
+        refreshPromiseClearTimeout = null
+      }, remainingTime)
     }
   })()
 
@@ -149,6 +180,14 @@ export async function revokeSession(): Promise<void> {
   } finally {
     setAccessToken(null)
     window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
+
+    // Limpa o singleton de refresh
+    if (refreshPromiseClearTimeout) {
+      clearTimeout(refreshPromiseClearTimeout)
+      refreshPromiseClearTimeout = null
+    }
+    refreshPromise = null
+    refreshPromiseTimestamp = 0
   }
 }
 
