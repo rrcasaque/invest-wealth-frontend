@@ -5,7 +5,6 @@ import type {
   WalletAssetInput,
   WalletSummary,
 } from '../types'
-import type { PortfolioPosition } from '@/shared/types/portfolio'
 import type { MarketAsset } from '@/shared/types/wallet'
 import {
   getOrFetchExpectativeDividendMonth,
@@ -18,15 +17,10 @@ export type InvestorWalletStatus = 'idle' | 'loading' | 'success' | 'error'
 export interface UseInvestorWalletResult {
   assets: WalletAsset[]
   summary: WalletSummary | null
-  /** Posições importadas da B3 (localStorage investwealth-portfolio). */
-  b3Positions: PortfolioPosition[]
-  /** Valor total das posições B3. */
-  b3TotalValue: number
-  /** Metadados da importação B3 (nome do arquivo + data). */
-  b3Meta: { fileName: string; importedAt: string } | null
   status: InvestorWalletStatus
   error: string | null
   create: (input: WalletAssetInput) => Promise<void>
+  update: (id: string, input: Record<string, unknown>) => Promise<void>
   remove: (id: string) => Promise<void>
   refresh: (forceDividendRefresh?: boolean) => Promise<void>
 }
@@ -35,10 +29,6 @@ export function useInvestorWallet(): UseInvestorWalletResult {
   const { toast } = useToast()
   const [assets, setAssets] = useState<WalletAsset[]>([])
   const [summary, setSummary] = useState<WalletSummary | null>(null)
-  const [b3Positions, setB3Positions] = useState<PortfolioPosition[]>([])
-  const [b3Meta, setB3Meta] = useState<
-    { fileName: string; importedAt: string } | null
-  >(null)
   const [status, setStatus] = useState<InvestorWalletStatus>('idle')
   const [error, setError] = useState<string | null>(null)
 
@@ -63,8 +53,6 @@ export function useInvestorWallet(): UseInvestorWalletResult {
           price: asset.currentPrice ?? 0,
           value: asset.currentValue ?? 0,
         }))
-      setB3Positions(positions)
-      setB3Meta(null)
       await getOrFetchExpectativeDividendMonth(forceDividendRefresh, positions)
       setStatus('success')
     } catch (err) {
@@ -92,6 +80,14 @@ export function useInvestorWallet(): UseInvestorWalletResult {
     [refresh],
   )
 
+  const update = useCallback(
+    async (id: string, input: Record<string, unknown>) => {
+      await investorWalletService.update(id, input)
+      await refresh()
+    },
+    [refresh],
+  )
+
   const remove = useCallback(
     async (id: string) => {
       await investorWalletService.remove(id)
@@ -100,17 +96,13 @@ export function useInvestorWallet(): UseInvestorWalletResult {
     [refresh],
   )
 
-  const b3TotalValue = b3Positions.reduce((sum, p) => sum + p.value, 0)
-
   return {
     assets,
     summary,
-    b3Positions,
-    b3TotalValue,
-    b3Meta,
     status,
     error,
     create,
+    update,
     remove,
     refresh,
   }

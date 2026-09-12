@@ -1,4 +1,4 @@
-import { Briefcase, TrendingUp, Coins, PiggyBank, FileSpreadsheet } from 'lucide-react'
+import { Briefcase, TrendingUp, Coins, PiggyBank } from 'lucide-react'
 import { Card, CardContent } from '@/shared/ui/card'
 import { formatCurrency } from '@/shared/utils'
 import type { WalletSummary } from '../types'
@@ -6,53 +6,52 @@ import { walletTypeLabel } from './types-labels'
 
 interface WalletSummaryCardProps {
   summary: WalletSummary | null
-  /** Valor total das posições importadas da B3. */
-  b3TotalValue?: number
 }
 
-export function WalletSummaryCard({ summary, b3TotalValue = 0 }: WalletSummaryCardProps) {
+export function WalletSummaryCard({ summary }: WalletSummaryCardProps) {
   if (!summary) return null
 
-  const grandTotal = summary.totalInvested + b3TotalValue
-  const totalAssets = summary.totalAssets + (b3TotalValue > 0 ? 1 : 0)
+  const grandTotal = summary.totalInvested
+  const totalAssets = summary.totalAssets
 
   return (
     <div className="grid grid-cols-1 gap-3 min-w-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-      <SummaryTile
-        icon={<Briefcase className="size-4" />}
-        label="Total Aplicado"
-        value={formatCurrency(grandTotal, { currency: 'BRL' })}
-        sub={`${totalAssets} carteira(s)/ativo(s)`}
-        tone="default"
-      />
-      <SummaryTile
-        icon={<TrendingUp className="size-4" />}
-        label="Renda Mensal"
-        value={formatCurrency(summary.monthlyIncome, { currency: 'BRL' })}
-        sub="Aluguéis líquidos"
-        tone="success"
-      />
-      <SummaryTile
-        icon={<PiggyBank className="size-4" />}
-        label={walletTypeLabel['renda-fixa']}
-        value={formatCurrency(summary.byType['renda-fixa'].value, { currency: 'BRL' })}
-        sub={`${summary.byType['renda-fixa'].count} ativo(s)`}
-        tone="info"
-      />
-      <SummaryTile
-        icon={<Coins className="size-4" />}
-        label={walletTypeLabel.cripto}
-        value={formatCurrency(summary.byType.cripto.value, { currency: 'BRL' })}
-        sub={`${summary.byType.cripto.count} ativo(s)`}
-        tone="warning"
-      />
-      <SummaryTile
-        icon={<FileSpreadsheet className="size-4" />}
-        label="Carteira B3"
-        value={formatCurrency(b3TotalValue, { currency: 'BRL' })}
-        sub={b3TotalValue > 0 ? 'Importada' : '—'}
-        tone="info"
-      />
+      {grandTotal > 0 && (
+        <SummaryTile
+          icon={<Briefcase className="size-4" />}
+          label="Total Aplicado"
+          value={formatCurrency(grandTotal, { currency: 'BRL' })}
+          sub={`${totalAssets} carteira(s)/ativo(s)`}
+          tone="default"
+        />
+      )}
+      {summary.monthlyIncome > 0 && (
+        <SummaryTile
+          icon={<TrendingUp className="size-4" />}
+          label="Renda Mensal"
+          value={formatCurrency(summary.monthlyIncome, { currency: 'BRL' })}
+          sub="Aluguéis líquidos"
+          tone="success"
+        />
+      )}
+      {summary.byType['renda-fixa'].value > 0 && (
+        <SummaryTile
+          icon={<PiggyBank className="size-4" />}
+          label={walletTypeLabel['renda-fixa']}
+          value={formatCurrency(summary.byType['renda-fixa'].value, { currency: 'BRL' })}
+          sub={`${summary.byType['renda-fixa'].count} ativo(s)`}
+          tone="info"
+        />
+      )}
+      {summary.byType.cripto.value > 0 && (
+        <SummaryTile
+          icon={<Coins className="size-4" />}
+          label={walletTypeLabel.cripto}
+          value={formatCurrency(summary.byType.cripto.value, { currency: 'BRL' })}
+          sub={`${summary.byType.cripto.count} ativo(s)`}
+          tone="warning"
+        />
+      )}
     </div>
   )
 }

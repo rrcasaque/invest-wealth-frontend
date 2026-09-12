@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Loader2, CalendarClock } from 'lucide-react'
+import { Plus, Loader2, CalendarClock, Pencil } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -30,45 +30,60 @@ import type {
   PaymentPriority,
   PaymentRecurrence,
   PaymentReminderInput,
+  PaymentReminder,
 } from '../types'
 
 interface PaymentReminderFormProps {
-  onCreate: (input: PaymentReminderInput) => Promise<void>
+  onCreate?: (input: PaymentReminderInput) => Promise<void>
+  reminder?: PaymentReminder
+  onUpdate?: (id: string, input: PaymentReminderInput) => Promise<void>
 }
 
-export function PaymentReminderForm({ onCreate }: PaymentReminderFormProps) {
+const emptyForm = (): PaymentReminderInput => ({
+  title: '',
+  notes: '',
+  category: 'conta',
+  amount: 0,
+  dueDate: new Date().toISOString().slice(0, 10),
+  priority: 'medium',
+  recurrence: 'monthly',
+})
+
+export function PaymentReminderForm({ onCreate, reminder, onUpdate }: PaymentReminderFormProps) {
+  const isEditing = Boolean(reminder)
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [form, setForm] = useState<PaymentReminderInput>({
-    title: '',
-    notes: '',
-    category: 'conta',
-    amount: 0,
-    dueDate: new Date().toISOString().slice(0, 10),
-    priority: 'medium',
-    recurrence: 'monthly',
-  })
+  const [form, setForm] = useState<PaymentReminderInput>(() =>
+    reminder
+      ? {
+          title: reminder.title,
+          notes: reminder.notes ?? '',
+          category: reminder.category,
+          amount: reminder.amount,
+          dueDate: reminder.dueDate,
+          priority: reminder.priority,
+          recurrence: reminder.recurrence,
+        }
+      : emptyForm(),
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.title.trim() || form.amount <= 0) return
     setIsSubmitting(true)
     try {
-      await onCreate({
+      const input = {
         ...form,
         title: form.title.trim(),
         amount: Number(form.amount),
-      })
+      }
+      if (reminder && onUpdate) {
+        await onUpdate(reminder.id, input)
+      } else if (onCreate) {
+        await onCreate(input)
+      }
       setOpen(false)
-      setForm({
-        title: '',
-        notes: '',
-        category: 'conta',
-        amount: 0,
-        dueDate: new Date().toISOString().slice(0, 10),
-        priority: 'medium',
-        recurrence: 'monthly',
-      })
+      if (!isEditing) setForm(emptyForm())
     } finally {
       setIsSubmitting(false)
     }
@@ -77,19 +92,33 @@ export function PaymentReminderForm({ onCreate }: PaymentReminderFormProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="whitespace-nowrap">
-          <Plus className="size-4" />
-          Novo Lembrete
-        </Button>
+        {isEditing ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            title={`Editar ${reminder?.title}`}
+            aria-label={`Editar ${reminder?.title}`}
+          >
+            <Pencil className="size-3.5" />
+          </Button>
+        ) : (
+          <Button size="sm" className="whitespace-nowrap">
+            <Plus className="size-4" />
+            Novo Lembrete
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarClock className="size-5 text-primary" />
-            Novo Lembrete de Pagamento
+            {isEditing ? <Pencil className="size-5 text-primary" /> : <CalendarClock className="size-5 text-primary" />}
+            {isEditing ? 'Editar Lembrete de Pagamento' : 'Novo Lembrete de Pagamento'}
           </DialogTitle>
           <DialogDescription>
-            Defina um pagamento recorrente ou único com data de vencimento e prioridade.
+            {isEditing
+              ? 'Atualize os dados do lembrete de pagamento.'
+              : 'Defina um pagamento recorrente ou único com data de vencimento e prioridade.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -216,10 +245,12 @@ export function PaymentReminderForm({ onCreate }: PaymentReminderFormProps) {
             <Button type="submit" disabled={isSubmitting || !form.title.trim()}>
               {isSubmitting ? (
                 <Loader2 className="size-4 animate-spin" />
+              ) : isEditing ? (
+                <Pencil className="size-4" />
               ) : (
                 <Plus className="size-4" />
               )}
-              Criar Lembrete
+              {isEditing ? 'Salvar alterações' : 'Criar Lembrete'}
             </Button>
           </DialogFooter>
         </form>

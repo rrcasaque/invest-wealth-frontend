@@ -2,6 +2,7 @@ import { Trash2, Building2, Coins, Home, FileText, Calendar } from 'lucide-react
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
+import { ConfirmDialog } from '@/shared/ui/dialog'
 import {
   Table,
   TableBody,
@@ -14,13 +15,15 @@ import { formatCurrency, formatDate } from '@/shared/utils'
 import type { WalletAsset } from '../types'
 import { getAssetInvestedValue } from '../types'
 import { walletTypeColor, walletTypeLabel } from './types-labels'
+import { WalletAssetEditDialog } from './WalletAssetEditDialog'
 
 interface WalletAssetListProps {
   assets: WalletAsset[]
   onRemove: (id: string) => void
+  onUpdate: (id: string, input: Record<string, unknown>) => Promise<void>
 }
 
-export function WalletAssetList({ assets, onRemove }: WalletAssetListProps) {
+export function WalletAssetList({ assets, onRemove, onUpdate }: WalletAssetListProps) {
   if (assets.length === 0) {
     return (
       <Card>
@@ -50,7 +53,7 @@ export function WalletAssetList({ assets, onRemove }: WalletAssetListProps) {
         {/* Mobile: card layout */}
         <div className="flex flex-col divide-y divide-border md:hidden">
           {assets.map((asset) => (
-            <WalletCard key={asset.id} asset={asset} onRemove={onRemove} />
+            <WalletCard key={asset.id} asset={asset} onRemove={onRemove} onUpdate={onUpdate} />
           ))}
         </div>
 
@@ -69,7 +72,7 @@ export function WalletAssetList({ assets, onRemove }: WalletAssetListProps) {
             </TableHeader>
             <TableBody>
               {assets.map((asset) => (
-                <WalletRow key={asset.id} asset={asset} onRemove={onRemove} />
+                <WalletRow key={asset.id} asset={asset} onRemove={onRemove} onUpdate={onUpdate} />
               ))}
             </TableBody>
           </Table>
@@ -126,7 +129,15 @@ function renderDetails(asset: WalletAsset): { label: string; value: string }[] {
   }
 }
 
-function WalletCard({ asset, onRemove }: { asset: WalletAsset; onRemove: (id: string) => void }) {
+function WalletCard({
+  asset,
+  onRemove,
+  onUpdate,
+}: {
+  asset: WalletAsset
+  onRemove: (id: string) => void
+  onUpdate: (id: string, input: Record<string, unknown>) => Promise<void>
+}) {
   const details = renderDetails(asset)
   return (
     <div className="flex min-w-0 flex-col gap-3 p-4">
@@ -166,21 +177,39 @@ function WalletCard({ asset, onRemove }: { asset: WalletAsset; onRemove: (id: st
           <Calendar className="size-3" />
           {formatDate(asset.createdAt, 'short')}
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 text-destructive hover:text-destructive"
-          onClick={() => onRemove(asset.id)}
-        >
-          <Trash2 className="size-3.5" />
-          Remover
-        </Button>
+        <div className="flex items-center gap-1">
+          <WalletAssetEditDialog asset={asset} onUpdate={onUpdate} />
+          <ConfirmDialog
+            trigger={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="size-3.5" />
+                Remover
+              </Button>
+            }
+            title="Remover ativo?"
+            description={`O ativo "${asset.name}" será removido permanentemente.`}
+            confirmLabel="Remover"
+            onConfirm={() => onRemove(asset.id)}
+          />
+        </div>
       </div>
     </div>
   )
 }
 
-function WalletRow({ asset, onRemove }: { asset: WalletAsset; onRemove: (id: string) => void }) {
+function WalletRow({
+  asset,
+  onRemove,
+  onUpdate,
+}: {
+  asset: WalletAsset
+  onRemove: (id: string) => void
+  onUpdate: (id: string, input: Record<string, unknown>) => Promise<void>
+}) {
   const details = renderDetails(asset)
   return (
     <TableRow>
@@ -222,15 +251,23 @@ function WalletRow({ asset, onRemove }: { asset: WalletAsset; onRemove: (id: str
       </TableCell>
       <TableCell className="pr-4">
         <div className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-destructive hover:text-destructive"
-            onClick={() => onRemove(asset.id)}
-            title="Remover ativo"
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
+          <WalletAssetEditDialog asset={asset} onUpdate={onUpdate} />
+          <ConfirmDialog
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 text-destructive hover:text-destructive"
+                title="Remover ativo"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            }
+            title="Remover ativo?"
+            description={`O ativo "${asset.name}" será removido permanentemente.`}
+            confirmLabel="Remover"
+            onConfirm={() => onRemove(asset.id)}
+          />
         </div>
       </TableCell>
     </TableRow>

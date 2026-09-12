@@ -152,6 +152,11 @@ class InvestorWalletService {
     return mapAsset(asset)
   }
 
+  async update(id: string, input: Record<string, unknown>): Promise<WalletAsset> {
+    const asset = await api.patch<ApiAsset>(`/wallet/assets/${id}`, input)
+    return mapAsset(asset)
+  }
+
   async remove(id: string): Promise<void> {
     await api.delete(`/wallet/assets/${id}`)
   }

@@ -10,7 +10,6 @@ import { Button } from '@/shared/ui/button'
 import { B3ImportDialog } from '@/app/components/B3ImportDialog'
 import { useInvestorWallet } from '../hooks/useInvestorWallet'
 import {
-  B3PositionsList,
   WalletAssetForm,
   WalletAssetList,
   WalletSummaryCard,
@@ -20,19 +19,16 @@ export function InvestorWalletScreen() {
   const {
     assets,
     summary,
-    b3Positions,
-    b3TotalValue,
-    b3Meta,
     status,
     error,
     create,
+    update,
     remove,
     refresh,
   } = useInvestorWallet()
 
   const hasAssets = assets.length > 0
-  const hasB3 = b3Positions.length > 0
-  const hasContent = hasAssets || hasB3
+  const hasContent = hasAssets
 
   return (
     <PageContainer maxWidth="wide" className="space-y-4 sm:space-y-6">
@@ -99,19 +95,10 @@ export function InvestorWalletScreen() {
         </div>
       ) : (
         <>
-          <WalletSummaryCard summary={summary} b3TotalValue={b3TotalValue} />
-
-          {hasB3 && (
-            <B3PositionsList
-              positions={b3Positions}
-              totalValue={b3TotalValue}
-              meta={b3Meta}
-              onCleared={refresh}
-            />
-          )}
+          <WalletSummaryCard summary={summary} />
 
           {hasAssets ? (
-            <WalletAssetList assets={assets} onRemove={remove} />
+            <WalletAssetList assets={assets} onRemove={remove} onUpdate={update} />
           ) : (
             <div className="rounded-xl border-2 border-dashed border-border bg-surface-container-low/50 p-8 text-center">
               <p className="text-sm text-muted-foreground">

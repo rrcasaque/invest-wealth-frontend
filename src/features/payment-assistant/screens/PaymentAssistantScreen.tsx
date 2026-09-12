@@ -43,6 +43,7 @@ export function PaymentAssistantScreen() {
     selectedMonth,
     setSelectedMonth,
     create,
+    update,
     markAsPaid,
     markAsPending,
     remove,
@@ -163,6 +164,7 @@ export function PaymentAssistantScreen() {
               onMarkAsPaid={markAsPaid}
               onMarkAsPending={markAsPending}
               onRemove={remove}
+              onUpdate={update}
             />
           </div>
         </>

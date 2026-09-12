@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
+import { ConfirmDialog } from '@/shared/ui/dialog'
 import {
   Table,
   TableBody,
@@ -20,7 +21,8 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 import { formatCurrency, formatDate } from '@/shared/utils'
-import type { PaymentReminder } from '../types'
+import type { PaymentReminder, PaymentReminderInput } from '../types'
+import { PaymentReminderForm } from './PaymentReminderForm'
 import {
   paymentCategoryColor,
   paymentCategoryLabel,
@@ -36,6 +38,7 @@ interface PaymentListProps {
   onMarkAsPaid: (id: string) => void
   onMarkAsPending: (id: string) => void
   onRemove: (id: string) => void
+  onUpdate: (id: string, input: PaymentReminderInput) => Promise<void>
 }
 
 export function PaymentList({
@@ -43,6 +46,7 @@ export function PaymentList({
   onMarkAsPaid,
   onMarkAsPending,
   onRemove,
+  onUpdate,
 }: PaymentListProps) {
   if (reminders.length === 0) {
     return (
@@ -79,6 +83,7 @@ export function PaymentList({
               onMarkAsPaid={onMarkAsPaid}
               onMarkAsPending={onMarkAsPending}
               onRemove={onRemove}
+              onUpdate={onUpdate}
             />
           ))}
         </div>
@@ -106,6 +111,7 @@ export function PaymentList({
                   onMarkAsPaid={onMarkAsPaid}
                   onMarkAsPending={onMarkAsPending}
                   onRemove={onRemove}
+                  onUpdate={onUpdate}
                 />
               ))}
             </TableBody>
@@ -121,11 +127,13 @@ function PaymentCard({
   onMarkAsPaid,
   onMarkAsPending,
   onRemove,
+  onUpdate,
 }: {
   reminder: PaymentReminder
   onMarkAsPaid: (id: string) => void
   onMarkAsPending: (id: string) => void
   onRemove: (id: string) => void
+  onUpdate: (id: string, input: PaymentReminderInput) => Promise<void>
 }) {
   const isPaid = reminder.status === 'paid'
   const isOverdue = reminder.status === 'overdue'
@@ -209,15 +217,23 @@ function PaymentCard({
             Marcar pago
           </Button>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 text-destructive hover:text-destructive"
-          onClick={() => onRemove(reminder.id)}
-        >
-          <Trash2 className="size-3.5" />
-          Remover
-        </Button>
+        <PaymentReminderForm reminder={reminder} onUpdate={onUpdate} />
+        <ConfirmDialog
+          trigger={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" />
+              Remover
+            </Button>
+          }
+          title="Remover lembrete?"
+          description={`O lembrete "${reminder.title}" será removido permanentemente.`}
+          confirmLabel="Remover"
+          onConfirm={() => onRemove(reminder.id)}
+        />
       </div>
     </div>
   )
@@ -228,11 +244,13 @@ function PaymentRow({
   onMarkAsPaid,
   onMarkAsPending,
   onRemove,
+  onUpdate,
 }: {
   reminder: PaymentReminder
   onMarkAsPaid: (id: string) => void
   onMarkAsPending: (id: string) => void
   onRemove: (id: string) => void
+  onUpdate: (id: string, input: PaymentReminderInput) => Promise<void>
 }) {
   const isPaid = reminder.status === 'paid'
   const isOverdue = reminder.status === 'overdue'
@@ -316,15 +334,23 @@ function PaymentRow({
               <CheckCircle2 className="size-3.5" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-destructive hover:text-destructive"
-            onClick={() => onRemove(reminder.id)}
-            title="Remover lembrete"
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
+          <PaymentReminderForm reminder={reminder} onUpdate={onUpdate} />
+          <ConfirmDialog
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 text-destructive hover:text-destructive"
+                title="Remover lembrete"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            }
+            title="Remover lembrete?"
+            description={`O lembrete "${reminder.title}" será removido permanentemente.`}
+            confirmLabel="Remover"
+            onConfirm={() => onRemove(reminder.id)}
+          />
         </div>
       </TableCell>
     </TableRow>

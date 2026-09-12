@@ -10,3 +10,4 @@ export {
   DialogTitle,
   DialogDescription,
 } from './Dialog'
+export { ConfirmDialog } from './ConfirmDialog'
