@@ -21,6 +21,12 @@ const API_URL = import.meta.env.VITE_API_URL ?? ''
  */
 let accessToken: string | null = null
 
+/**
+ * Chave do localStorage para fallback do refresh token.
+ * Usado apenas quando cookies não estão disponíveis (alguns PWAs/mobile).
+ */
+const REFRESH_TOKEN_STORAGE_KEY = 'iw_refresh_fallback'
+
 export function getAccessToken(): string | null {
   return accessToken
 }
@@ -34,6 +40,7 @@ interface ApiResponseBody {
   message?: string
   session?: AuthResult['session']
   accessToken?: string
+  refreshToken?: string
   ticket?: string
 }
 
@@ -70,24 +77,49 @@ export function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
     try {
-      const res = await fetch(`${API_URL}/auth/refresh`, {
+      // Tenta usar o cookie HttpOnly primeiro (método preferido)
+      let res = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       })
+
+      // Se falhar e houver um refresh token no localStorage (fallback), tenta usar
+      if (!res.ok) {
+        const fallbackToken = window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)
+        if (fallbackToken) {
+          res = await fetch(`${API_URL}/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Refresh-Token': fallbackToken,
+            },
+          })
+        }
+      }
+
       if (!res.ok) {
         setAccessToken(null)
+        window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
         return null
       }
+
       const data = (await res.json()) as ApiResponseBody
       if (data.accessToken) {
         setAccessToken(data.accessToken)
+        // Se recebeu um novo refresh token, salva no localStorage como fallback
+        if (data.refreshToken) {
+          window.localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, data.refreshToken)
+        }
         return data.accessToken
       }
       setAccessToken(null)
+      window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
       return null
     } catch {
       setAccessToken(null)
+      window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
       return null
     } finally {
       // Libera o lock após microtasks drenarem.
@@ -112,6 +144,7 @@ export async function revokeSession(): Promise<void> {
     /* ignore — logout é best-effort */
   } finally {
     setAccessToken(null)
+    window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
   }
 }
 

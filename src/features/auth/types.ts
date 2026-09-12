@@ -42,5 +42,6 @@ export interface AuthResult {
   message?: string
   session?: AuthSession
   accessToken?: string
+  refreshToken?: string
   ticket?: string
 }

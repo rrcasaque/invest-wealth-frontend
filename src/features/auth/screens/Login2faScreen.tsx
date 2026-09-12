@@ -50,7 +50,7 @@ export function Login2faScreen() {
     }
     const result = await submit({ ticket, code: values.code })
     if (result.status === 'success' && result.session) {
-      login(result.session, result.accessToken)
+      login(result.session, result.accessToken, result.refreshToken)
       toast({ title: 'Bem-vindo de volta', description: 'Sessão iniciada com sucesso.' })
       navigate('/painel', { replace: true })
     } else if (result.status === 'error') {

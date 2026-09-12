@@ -38,7 +38,7 @@ export function LoginScreen() {
     setAuthError(null)
     const result = await submit(values)
     if (result.status === 'success' && result.session) {
-      login(result.session, result.accessToken)
+      login(result.session, result.accessToken, result.refreshToken)
       toast({ title: 'Bem-vindo de volta', description: 'Sessão iniciada com sucesso.' })
       const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname
       navigate(from ?? '/painel', { replace: true })

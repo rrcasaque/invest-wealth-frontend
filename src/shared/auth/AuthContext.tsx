@@ -21,7 +21,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean
   /** True enquanto tentamos restaurar a sessão no boot (via /auth/refresh). */
   isRestoring: boolean
-  login: (session: AuthSession, accessToken?: string) => void
+  login: (session: AuthSession, accessToken?: string, refreshToken?: string) => void
   logout: () => Promise<void>
 }
 
@@ -35,21 +35,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     window.localStorage.removeItem('investwealth-session')
     let cancelled = false
-    refreshAccessToken()
-      .then(async (token) => {
-        if (cancelled || !token) return
-        const currentUser = await getCurrentUser()
+    
+    // Função auxiliar para tentar restaurar a sessão com retry
+    const attemptRestore = async (retries = 2): Promise<void> => {
+      for (let attempt = 0; attempt <= retries; attempt++) {
         if (cancelled) return
-        setSession(currentUser ?? null)
-        if (currentUser) {
-          void migrateLocalData().catch(() => {
-            // Mantém os dados locais para uma próxima tentativa em caso de falha.
-          })
+        
+        try {
+          const token = await refreshAccessToken()
+          if (cancelled || !token) {
+            if (attempt < retries) {
+              // Aguarda um pouco antes de tentar novamente
+              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+              continue
+            }
+            return
+          }
+          
+          const currentUser = await getCurrentUser()
+          if (cancelled) return
+          
+          setSession(currentUser ?? null)
+          if (currentUser) {
+            void migrateLocalData().catch(() => {
+              // Mantém os dados locais para uma próxima tentativa em caso de falha.
+            })
+          }
+          return // Sucesso, sai do loop
+        } catch (error) {
+          if (attempt < retries) {
+            // Aguarda antes de tentar novamente
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+          }
         }
-      })
+      }
+    }
+    
+    attemptRestore()
       .finally(() => {
         if (!cancelled) setIsRestoring(false)
       })
+    
     return () => {
       cancelled = true
     }
@@ -63,13 +89,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearInterval(refreshInterval)
   }, [session])
 
-  const login = useCallback((newSession: AuthSession, token?: string) => {
+  const login = useCallback((newSession: AuthSession, token?: string, refreshToken?: string) => {
     setSession(newSession)
     if (token) {
       setAccessToken(token)
       void migrateLocalData().catch(() => {
         // Mantém os dados locais para uma próxima tentativa em caso de falha.
       })
+    }
+    // Salva o refresh token no localStorage como fallback (se fornecido)
+    if (refreshToken) {
+      window.localStorage.setItem('iw_refresh_fallback', refreshToken)
     }
   }, [])
 
