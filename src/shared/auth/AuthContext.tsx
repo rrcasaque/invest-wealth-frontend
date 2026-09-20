@@ -71,7 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!session) return
     const refreshInterval = window.setInterval(() => {
-      void refreshAccessToken()
+      // Refresh automático a cada 10 minutos para manter a sessão ativa
+      void refreshAccessToken().catch(() => {
+        // Se o refresh falhar, limpa a sessão (token expirado ou revogado)
+        setSession(null)
+      })
     }, 10 * 60 * 1000)
     return () => window.clearInterval(refreshInterval)
   }, [session])
