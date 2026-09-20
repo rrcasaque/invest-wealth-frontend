@@ -80,9 +80,18 @@ const InvestorWalletScreen = lazy(() =>
   })),
 )
 
-export function AppRoutes() {
-  const { isAuthenticated } = useAuth()
+function RootRedirect() {
+  const { isAuthenticated, isRestoring } = useAuth()
 
+  // Aguarda a restauração da sessão (refresh token) antes de decidir
+  // para onde redirecionar — senão usuários logados seriam enviados
+  // ao login antes do refresh completar.
+  if (isRestoring) return <RouteFallback />
+
+  return <Navigate to={isAuthenticated ? '/painel' : '/entrar'} replace />
+}
+
+export function AppRoutes() {
   return (
     <Routes>
       {/* Rotas públicas (autenticação) */}
@@ -111,9 +120,9 @@ export function AppRoutes() {
         <Route path="/carteira" element={<InvestorWalletScreen />} />
       </Route>
 
-      {/* Base redireciona conforme autenticação */}
-      <Route path="/" element={<Navigate to={isAuthenticated ? '/painel' : '/entrar'} replace />} />
-      <Route path="*" element={<Navigate to={isAuthenticated ? '/painel' : '/entrar'} replace />} />
+      {/* Base redireciona conforme autenticação (aguarda restauração) */}
+      <Route path="/" element={<RootRedirect />} />
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   )
 }
