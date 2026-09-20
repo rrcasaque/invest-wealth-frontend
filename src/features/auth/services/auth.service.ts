@@ -106,7 +106,6 @@ export function refreshAccessToken(): Promise<string | null> {
   refreshPromise = (async () => {
     try {
       // Tenta usar o cookie HttpOnly primeiro (método preferido)
-      console.log('[Auth] Tentando refresh com cookie HttpOnly...')
       let res = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
@@ -115,10 +114,8 @@ export function refreshAccessToken(): Promise<string | null> {
 
       // Se falhar e houver um refresh token no localStorage (fallback), tenta usar
       if (!res.ok) {
-        console.log('[Auth] Refresh com cookie falhou, tentando fallback do localStorage...')
         const fallbackToken = window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)
         if (fallbackToken) {
-          console.log('[Auth] Token fallback encontrado, enviando via header X-Refresh-Token')
           res = await fetch(`${API_URL}/auth/refresh`, {
             method: 'POST',
             credentials: 'include',
@@ -127,15 +124,10 @@ export function refreshAccessToken(): Promise<string | null> {
               'X-Refresh-Token': fallbackToken,
             },
           })
-        } else {
-          console.log('[Auth] Nenhum token fallback encontrado no localStorage')
         }
-      } else {
-        console.log('[Auth] Refresh com cookie HttpOnly bem-sucedido!')
       }
 
       if (!res.ok) {
-        console.error('[Auth] Refresh falhou completamente:', res.status, res.statusText)
         setAccessToken(null)
         window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
         return null
@@ -143,21 +135,17 @@ export function refreshAccessToken(): Promise<string | null> {
 
       const data = (await res.json()) as ApiResponseBody
       if (data.accessToken) {
-        console.log('[Auth] Access token renovado com sucesso')
         setAccessToken(data.accessToken)
         // Se recebeu um novo refresh token, salva no localStorage como fallback
         if (data.refreshToken) {
-          console.log('[Auth] Novo refresh token recebido, salvando no localStorage')
           window.localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, data.refreshToken)
         }
         return data.accessToken
       }
-      console.error('[Auth] Resposta não contém accessToken')
       setAccessToken(null)
       window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
       return null
     } catch (error) {
-      console.error('[Auth] Erro durante refresh:', error)
       setAccessToken(null)
       window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY)
       return null
