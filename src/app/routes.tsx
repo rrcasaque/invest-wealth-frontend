@@ -91,12 +91,33 @@ function RootRedirect() {
   return <Navigate to={isAuthenticated ? '/painel' : '/entrar'} replace />
 }
 
+/**
+ * Impede usuários autenticados de acessar a tela de login.
+ * Se a sessão for restaurada enquanto o usuário está em /entrar,
+ * ele é redirecionado automaticamente para o painel.
+ */
+function GuestOnly({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isRestoring } = useAuth()
+
+  if (isRestoring) return <RouteFallback />
+  if (isAuthenticated) return <Navigate to="/painel" replace />
+
+  return <>{children}</>
+}
+
 export function AppRoutes() {
   return (
     <Routes>
       {/* Rotas públicas (autenticação) */}
       <Route element={<AuthLayout />}>
-        <Route path="/entrar" element={<LoginScreen />} />
+        <Route
+          path="/entrar"
+          element={
+            <GuestOnly>
+              <LoginScreen />
+            </GuestOnly>
+          }
+        />
         <Route path="/cadastro" element={<RegisterScreen />} />
         <Route path="/recuperar-senha" element={<PasswordRecoveryScreen />} />
         <Route path="/verificar-email" element={<VerifyEmailScreen />} />
